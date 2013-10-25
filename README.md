@@ -11,4 +11,4 @@ It is not finished yet (due to time problems) nor the manipulation in any state 
 How to use it
 ============
 
-I added some examples in the directory "example" that will show how the library can be used.
+I added some examples in the directory "examples" that will show how the library can be used.
