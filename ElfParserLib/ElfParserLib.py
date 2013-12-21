@@ -2450,7 +2450,7 @@ class ElfParser:
 		for i in range(self.header.e_shnum):
 			if (i+1) < self.header.e_shnum:
 				if (self.sections[i].elfN_shdr.sh_offset < newSectionOffset 
-				and self.sections[i+1].elfN_shdr.sh_offset > newSectionOffset):
+				and self.sections[i+1].elfN_shdr.sh_offset >= newSectionOffset):
 					positionNewSection = i+1
 
 					# if new section comes before string table section => adjust string table section index
@@ -2466,12 +2466,12 @@ class ElfParser:
 		# section header table lies oft directly behind the string table
 		# check if new section name would overwrite data of section header table
 		# => move section header table
-		if (self.header.e_shoff > (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + self.sections[self.header.e_shstrndx].elfN_shdr.sh_size) 
-		and self.header.e_shoff < (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + self.sections[self.header.e_shstrndx].elfN_shdr.sh_size + len(newSectionName))):
-			self.header.e_shoff += len(newSectionName)
+		if (self.header.e_shoff >= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + self.sections[self.header.e_shstrndx].elfN_shdr.sh_size) 
+		and self.header.e_shoff <= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + self.sections[self.header.e_shstrndx].elfN_shdr.sh_size + len(newSectionName) + 1)):
+			self.header.e_shoff += len(newSectionName) + 1
 
-		# add size of new name to string table
-		self.sections[self.header.e_shstrndx].elfN_shdr.sh_size += len(newSectionName)
+		# add size of new name to string table + 1 for null-terminated C string
+		self.sections[self.header.e_shstrndx].elfN_shdr.sh_size += len(newSectionName) + 1
 
 		# increase count of sections
 		self.header.e_shnum += 1
