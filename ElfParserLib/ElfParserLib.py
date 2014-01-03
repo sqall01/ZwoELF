@@ -2721,3 +2721,31 @@ class ElfParser:
 			raise ValueError('Jump relocation entry with the name "%s" was not found.' % name)
 
 		return entryToSearch.r_offset
+
+
+
+
+	# this functions removes the first section given by name
+	# return values: None
+	def deleteSectionByName(self, name):
+
+		# search for the first section with the given name
+		found = False
+		for sectionNo in range(len(self.sections)):
+			if self.sections[sectionNo].sectionName == name:
+				found = True
+				break
+
+		# check if the section was found
+		if not found:
+			return
+
+		# remove the found section 
+		self.sections.pop(sectionNo)
+
+		# modify ELF header => change section string table index and number of sections
+		if sectionNo < self.header.e_shstrndx:
+			self.header.e_shstrndx = self.header.e_shstrndx - 1
+		elif sectionNo == self.header.e_shstrndx:
+			self.header.e_shstrndx = 0
+		self.header.e_shnum = self.header.e_shnum - 1
