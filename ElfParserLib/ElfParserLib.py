@@ -2218,6 +2218,8 @@ class ElfParser:
 		relEntrySize = None
 		relOffset = None		
 		relSize = None
+		symbolTableOffset = None
+		symbolEntrySize = None		
 		for dynEntry in self.dynamicSegmentEntries:
 			if dynEntry.d_tag == D_tag.DT_JMPREL:
 				# get the offset in the file of the jump relocation table
@@ -2233,6 +2235,13 @@ class ElfParser:
 				# get the offset in the file of the relocation table
 				relOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
 				continue
+			if dynEntry.d_tag == D_tag.DT_SYMTAB:
+				# get the offset in the file of the symbol table
+				symbolTableOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
+				continue
+			if dynEntry.d_tag == D_tag.DT_SYMENT:
+				symbolEntrySize = dynEntry.d_un
+				continue				
 			if dynEntry.d_tag == D_tag.DT_RELSZ:
 				relSize = dynEntry.d_un
 
@@ -2258,6 +2267,56 @@ class ElfParser:
 				newfile[jmpRelOffset + (i*relEntrySize) + 5] = (chr((self.jumpRelocationEntries[i].r_info >> 8) & 0xff))
 				newfile[jmpRelOffset + (i*relEntrySize) + 6] = (chr((self.jumpRelocationEntries[i].r_info >> 16) & 0xff))
 				newfile[jmpRelOffset + (i*relEntrySize) + 7] = (chr((self.jumpRelocationEntries[i].r_info >> 24) & 0xff))
+
+				# write symbols back to symbol table
+				if symbolTableOffset != None:
+					jmpRelEntry = self.jumpRelocationEntries[i]
+
+					'''
+					Elf32_Word		st_name;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 0] = (chr((jmpRelEntry.symbol.st_name >> 0) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 1] = (chr((jmpRelEntry.symbol.st_name >> 8) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 2] = (chr((jmpRelEntry.symbol.st_name >> 16) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 3] = (chr((jmpRelEntry.symbol.st_name >> 24) & 0xff))
+
+					'''
+					Elf32_Addr		st_value;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 4] = (chr((jmpRelEntry.symbol.st_value >> 0) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 5] = (chr((jmpRelEntry.symbol.st_value >> 8) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 6] = (chr((jmpRelEntry.symbol.st_value >> 16) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 7] = (chr((jmpRelEntry.symbol.st_value >> 24) & 0xff))					
+
+					'''
+					Elf32_Word		st_size;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 8] = (chr((jmpRelEntry.symbol.st_size >> 0) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 9] = (chr((jmpRelEntry.symbol.st_size >> 8) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 10] = (chr((jmpRelEntry.symbol.st_size >> 16) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 11] = (chr((jmpRelEntry.symbol.st_size >> 24) & 0xff))						
+
+					'''
+					unsigned char	st_info;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 12] = (chr((jmpRelEntry.symbol.st_info) & 0xff))						
+
+					'''
+					unsigned char	st_other;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 13] = (chr((jmpRelEntry.symbol.st_other) & 0xff))						
+
+					'''
+					Elf32_Half		st_shndx;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 14] = (chr((jmpRelEntry.symbol.st_shndx >> 0) & 0xff))
+					newfile[symbolTableOffset + (jmpRelEntry.r_sym * symbolEntrySize) + 15] = (chr((jmpRelEntry.symbol.st_shndx >> 8) & 0xff))	
 
 
 		# check if DT_REL entry exists (DT_REL is only mandatory when DT_RELA is not present)
@@ -2749,3 +2808,23 @@ class ElfParser:
 		elif sectionNo == self.header.e_shstrndx:
 			self.header.e_shstrndx = 0
 		self.header.e_shnum = self.header.e_shnum - 1
+
+
+
+
+	# this function searches for the first jump relocation entry given by name
+	# return values: (ElfN_Rel) jump relocation entry
+	def getJmpRelEntryByName(self, name):
+
+		# search for the first jump relocation entry with the given name
+		foundEntry = None
+		for jmpRelEntry in self.jumpRelocationEntries:
+			if jmpRelEntry.name == name:
+				foundEntry = jmpRelEntry
+				break
+
+		# check if jump relocation entry was found
+		if foundEntry == None:
+			raise ValueError('Jump relocation entry with the name "%s" was not found.' % name)
+
+		return foundEntry
