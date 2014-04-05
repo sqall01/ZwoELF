@@ -1416,7 +1416,7 @@ class ElfParser:
 			self.dynamicSegmentEntries.append(dynSegmentEntry)
 
 			# check if the end of the dynamic segment array is reached
-			if dynSegmentEntry.d_tag == P_type.PT_NULL:
+			if dynSegmentEntry.d_tag == D_tag.DT_NULL:
 				endReached = True
 				break
 
