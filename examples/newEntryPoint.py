@@ -21,9 +21,13 @@ for i in range(freeSpace-1):
 	#dummyData.append("\x00")
 	dummyData.append("\x41")
 
-#manipulatedSegment, newDataOffset, newDataMemoryAddr = test.appendDataToExecutableSegment(dummyData, addNewSection=True, newSectionName=".blahblub")
-#manipulatedSegment, newDataOffset, newDataMemoryAddr = test.appendDataToExecutableSegment(dummyData, extendExistingSection=True)
-manipulatedSegment, newDataOffset, newDataMemoryAddr = test.appendDataToExecutableSegment(dummyData)
+#manipulatedSegment, newDataOffset, newDataMemoryAddr 
+# = test.appendDataToExecutableSegment(dummyData, 
+# addNewSection=True, newSectionName=".blahblub")
+# manipulatedSegment, newDataOffset, newDataMemoryAddr 
+# = test.appendDataToExecutableSegment(dummyData, extendExistingSection=True)
+manipulatedSegment, newDataOffset, newDataMemoryAddr \
+	= test.appendDataToExecutableSegment(dummyData)
 
 print "Offset of new data: 0x%x" % newDataOffset
 print "Virtual memory addr of new data: 0x%x" % newDataMemoryAddr

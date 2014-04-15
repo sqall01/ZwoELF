@@ -22,7 +22,8 @@ for i in range(freeSpace-1):
 	#dummyData.append("\x00")
 	dummyData.append("\x41")
 
-manipulatedSegment, newDataOffset, newDataMemoryAddr = test.appendDataToExecutableSegment(dummyData)
+manipulatedSegment, newDataOffset, newDataMemoryAddr \
+	= test.appendDataToExecutableSegment(dummyData)
 
 print "Offset of new data: 0x%x" % newDataOffset
 print "Virtual memory addr of new data: 0x%x" % newDataMemoryAddr
@@ -56,19 +57,23 @@ for i in range(copiedBytesFromEntry):
 
 testData = list()
 
-# store address of newDataMemoryAddr + 4 at newDataMemoryAddr (for instruction "mov ecx, [newDataMemoryAddr]"")
+# store address of newDataMemoryAddr + 4 at newDataMemoryAddr 
+# (for instruction "mov ecx, [newDataMemoryAddr]"")
 testData.append(chr(((newDataMemoryAddr+4) & 0xff)))
 testData.append((chr(((newDataMemoryAddr+4) >> 8) & 0xff)))
 testData.append((chr(((newDataMemoryAddr+4) >> 16) & 0xff)))
 testData.append((chr(((newDataMemoryAddr+4) >> 24) & 0xff)))
 
-# copy original entrypoint data (these instructions are executed first when control flow is altered)
+# copy original entrypoint data (these instructions are executed 
+# first when control flow is altered)
 for i in range(len(entryPointData)):
 	testData.append(entryPointData[i])
 
-# calculate relative jump from current position to entrypoint + copiedBytesFromEntry
+# calculate relative jump from current position to 
+# entrypoint + copiedBytesFromEntry
 # formula: 0 - (sourceAddress  - targetAddress) - 5
-jumpTarget = c_uint(0 - ((newDataMemoryAddr + len(testData)) - ((originalEntry + copiedBytesFromEntry))) - 5 ).value
+jumpTarget = c_uint(0 - ((newDataMemoryAddr + len(testData)) 
+	- ((originalEntry + copiedBytesFromEntry))) - 5 ).value
 testData.append("\xE9") # JMP rel32
 testData.append(chr((jumpTarget & 0xff)))
 testData.append((chr((jumpTarget >> 8) & 0xff)))
