@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from ctypes import c_uint
-from Zwoelf import ElfParser
+from ZwoELF import ElfParser
 
 
 x86File = "simple"

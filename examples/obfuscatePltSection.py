@@ -3,7 +3,7 @@
 import sys
 import os
 from ctypes import c_uint
-from Zwoelf import ElfParser, SH_type, SH_flags
+from ZwoELF import ElfParser, SH_type, SH_flags
 
 
 # remove original ".got.plt" and ".plt" section and move them 
