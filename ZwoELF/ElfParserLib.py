@@ -1,5 +1,11 @@
 #!/usr/bin/python
 
+# written by sqall
+# twitter: https://twitter.com/sqall01
+# blog: http://blog.h4des.org
+# 
+# Licensed under the GNU Public License, version 2.
+
 import binascii
 import sys
 import hashlib
@@ -552,6 +558,18 @@ class ElfParser:
 		'''
 		if ord(self.header.e_ident[8]) != 0:
 			raise NotImplementedError("EI_ABIVERSION not yet supported")
+
+
+		# check if e_type is supported at the moment
+		if not (self.header.e_type == ElfN_Ehdr.E_type.ET_EXEC
+			or self.header.e_type == ElfN_Ehdr.E_type.ET_DYN):
+			raise NotImplementedError("Only e_type ET_EXEC and ET_DYN " \
+				+ "are supported yet")
+
+
+		# check if e_machine is supported at the moment
+		if not (self.header.e_machine == ElfN_Ehdr.E_machine.EM_386):
+			raise NotImplementedError("Only e_machine EM_386 is supported yet")
 
 
 		###############################################
