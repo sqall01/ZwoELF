@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from ctypes import c_uint
-from ElfParserLib import ElfParser
+from Zwoelf import ElfParser
 
 x86File = "ls"
 
