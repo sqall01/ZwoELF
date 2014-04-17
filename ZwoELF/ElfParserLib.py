@@ -3,6 +3,7 @@
 # written by sqall
 # twitter: https://twitter.com/sqall01
 # blog: http://blog.h4des.org
+# github: https://github.com/sqall01
 # 
 # Licensed under the GNU Public License, version 2.
 
@@ -3122,7 +3123,7 @@ class ElfParser:
 		# search for the first jump relocation entry with the given name
 		foundEntry = None
 		for jmpRelEntry in self.jumpRelocationEntries:
-			if jmpRelEntry.name == name:
+			if jmpRelEntry.symbol.symbolName == name:
 				foundEntry = jmpRelEntry
 				break
 
