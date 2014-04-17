@@ -10,32 +10,19 @@ import binascii
 import sys
 import hashlib
 from Elf import ElfN_Ehdr, Shstrndx, Elf32_Shdr, SH_flags, SH_type, \
-	Elf32_Phdr, P_type, P_flags, D_tag, ElfN_Dyn, ElfN_Rel, ElfN_Sym, R_type
-
-
-class Section:
-
-	def __init__(self):
-		self.sectionName = ""
-		# for 32 bit systems only
-		self.elfN_shdr = Elf32_Shdr() # change here to load Elf64_Shdr
-
-
-class Segment:
-
-	def __init__(self):
-		# for 32 bit systems only
-		self.elfN_Phdr = Elf32_Phdr() # change here to load Elf64_Phdr
-		self.sectionsWithin = list()
-		self.segmentsWithin = list()
+	Elf32_Phdr, P_type, P_flags, D_tag, ElfN_Dyn, ElfN_Rel, ElfN_Sym, R_type, \
+	Section, Segment, DynamicSymbol
 
 
 class ElfParser:
 
-	def __init__(self, filename, force=False, startOffset=0):
+	def __init__(self, filename, force=False, startOffset=0, 
+		forceDynSymParsing=0):
+		self.forceDynSymParsing = forceDynSymParsing
 		self.header = None
 		self.segments = None
 		self.sections = None
+		self.dynamicSymbolEntries = list()
 		self.dynamicSegmentEntries = None
 		self.jumpRelocationEntries = None
 		self.relocationEntries = None
@@ -269,6 +256,83 @@ class ElfParser:
 		newsection.elfN_shdr.sh_entsize = sh_entsize
 
 		return newsection
+
+
+	# this function parses a dynamic symbol at the given offset
+	# return values: (DynamicSymbol) the parsed dynamic symbol
+	def _parseDynamicSymbol(self, offset, stringTableOffset, stringTableSize):
+
+		tempSymbol = DynamicSymbol()
+
+		# get values from the symbol table
+		'''
+		Elf32_Word		st_name;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_name = \
+			(ord(self.data[offset + 3]) \
+			<< 24) \
+			+ (ord(self.data[offset + 2]) \
+			<< 16) \
+			+ (ord(self.data[offset + 1]) \
+			<< 8) \
+			+ ord(self.data[offset])
+
+		'''
+		Elf32_Addr		st_value;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_value = \
+			(ord(self.data[offset + 7]) \
+			<< 24) + (ord(self.data[offset + 6]) \
+			<< 16) + (ord(self.data[offset + 5]) \
+			<< 8) + ord(self.data[offset + 4])
+
+		'''
+		Elf32_Word		st_size;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_size = \
+			(ord(self.data[offset + 11]) << 24) \
+			+ (ord(self.data[offset + 10]) << 16) \
+			+ (ord(self.data[offset + 9]) << 8) \
+			+ ord(self.data[offset + 8])
+
+		'''
+		unsigned char	st_info;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_info = ord(self.data[offset + 12])
+
+		'''
+		unsigned char	st_other;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_other = ord(self.data[offset + 13])
+
+		'''
+		Elf32_Half		st_shndx;
+		'''
+		# for 32 bit systems only
+		tempSymbol.ElfN_Sym.st_shndx = \
+			(ord(self.data[offset + 15]) \
+			<< 8) \
+			+ ord(self.data[offset + 14])
+
+		# extract name from the string table
+		temp = ""
+		for i in range(
+			(stringTableOffset + stringTableSize 
+			- tempSymbol.ElfN_Sym.st_name)):
+			if (self.data[stringTableOffset 
+				+ tempSymbol.ElfN_Sym.st_name + i] == "\x00"):
+				break
+			temp += self.data[stringTableOffset \
+				+ tempSymbol.ElfN_Sym.st_name + i]
+		tempSymbol.symbolName = temp
+
+		# return dynamic symbol
+		return tempSymbol
 
 
 	# this function parses the ELF file
@@ -1180,6 +1244,118 @@ class ElfParser:
 				" executable/shared object).")
 
 
+		# estimate symbol table size in order to not rely on sections
+		# when ELF is compiled with gcc, the .dynstr section (string table)
+		# follows directly the .dynsym section (symbol table)
+		# => size of symbol table is difference between string and symbol table
+		estimatedSymbolTableSize = stringTableOffset - symbolTableOffset
+
+		# find .dynsym section in sections
+		# and only use if it exists once
+		dynSymSection = None
+		dynSymSectionDuplicated = False
+		dynSymSectionIgnore = False
+		dynSymEstimationIgnore = False
+		for section in self.sections:
+			if section.sectionName == ".dynsym":
+				# check if .dynsym section only exists once
+				# (because section entries are optional and can
+				# be easily manipulated)
+				if dynSymSection == None:
+					dynSymSection = section
+
+				# when .dynsym section exists multiple times
+				# do not use it
+				else:
+					dynSymSectionDuplicated = True
+					break
+
+		# check if .dynsym section exists
+		if dynSymSection == None:
+			print 'NOTE: ".dynsym" section was not found. Trying to use ' \
+				+ 'estimation to parse all symbols from the symbol table'
+			dynSymSectionIgnore = True
+
+		# check if .dynsym section was found multiple times
+		elif dynSymSectionDuplicated == True:
+			print 'NOTE: ".dynsym" section was found multiple times. ' \
+				+ 'Trying to use estimation to parse all symbols from' \
+				+ 'the symbol table'
+			dynSymSectionIgnore = True		
+
+		# check if symbol table offset matches the offset of the
+		# ".dynsym" section
+		elif dynSymSection.elfN_shdr.sh_offset != symbolTableOffset:
+			print 'NOTE: ".dynsym" section offset does not match ' \
+				+ 'offset of symbol table. Ignoring the section ' \
+				+ 'and using the estimation.'
+			dynSymSectionIgnore = True
+
+		# check if the size of the ".dynsym" section matches the
+		# estimated size
+		elif dynSymSection.elfN_shdr.sh_size != estimatedSymbolTableSize:
+
+			# check if forceDynSymParsing was not set (default value is 0)
+			if self.forceDynSymParsing == 0:
+				print 'WARNING: ".dynsym" size does not match the estimated ' \
+					+ 'size. One (or both) are wrong. Ignoring the dynamic ' \
+					+ ' symbols. You can force the using of the ".dynsym" ' \
+					+ 'section by setting "forceDynSymParsing=1" or force ' \
+					+ 'the using of the estimated size by setting ' \
+					+ '"forceDynSymParsing=2".'
+
+				# ignore dynamic symbols
+				dynSymSectionIgnore = True
+				dynSymEstimationIgnore = True
+
+			# forcing the use of the ".dynsym" section
+			elif self.forceDynSymParsing == 1:
+
+				dynSymSectionIgnore = False
+				dynSymEstimationIgnore = True
+
+			# forcing the use of the estimation
+			elif self.forceDynSymParsing == 2:
+
+				dynSymSectionIgnore = True
+				dynSymEstimationIgnore = False
+
+			# value does not exists
+			else:
+				raise TypeError('"forceDynSymParsing" uses an invalid value.')
+
+		# use ".dynsym" section information (when considered correct)
+		if dynSymSectionIgnore == False:
+
+			# parse the complete symbol table based on the
+			# ".dynsym" section
+			for i in range(dynSymSection.elfN_shdr.sh_size \
+				/ symbolEntrySize):
+
+				tempOffset = symbolTableOffset + (i*symbolEntrySize)
+				tempSymbol = self._parseDynamicSymbol(tempOffset,
+					stringTableOffset, stringTableSize)
+
+				# add entry to dynamic symbol entries list
+				self.dynamicSymbolEntries.append(tempSymbol)
+
+		# use estimation to parse dynamic symbols
+		elif (dynSymSectionIgnore == True
+			and dynSymEstimationIgnore == False):
+
+			# parse the complete symbol table based on the
+			# estimation
+			for i in range(estimatedSymbolTableSize \
+				/ symbolEntrySize):
+
+				tempOffset = symbolTableOffset + (i*symbolEntrySize)
+				tempSymbol = self._parseDynamicSymbol(tempOffset,
+					stringTableOffset, stringTableSize)
+
+				# add entry to dynamic symbol entries list
+				self.dynamicSymbolEntries.append(tempSymbol)
+
+
 		# check if DT_JMPREL entry exists (it is optional for ELF
 		# executables/shared objects)
 		# => parse jump relocation entries
@@ -1227,87 +1403,33 @@ class ElfParser:
 				jmpRelEntry.r_sym = (jmpRelEntry.r_info >> 8)
 
 				# get values from the symbol table
-				'''
-				Elf32_Word		st_name;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_name = \
-					(ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 3]) \
-					<< 24) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 2]) \
-					<< 16) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 1]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize)])
+				tempOffset = symbolTableOffset \
+					+ (jmpRelEntry.r_sym*symbolEntrySize)
+				tempSymbol = self._parseDynamicSymbol(tempOffset,
+					stringTableOffset, stringTableSize)
 
-				'''
-				Elf32_Addr		st_value;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_value = \
-					(ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 7]) \
-					<< 24) + (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 6]) \
-					<< 16) + (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 5]) \
-					<< 8) + ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 4])
-
-				'''
-				Elf32_Word		st_size;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_size = \
-					(ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 11]) << 24) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 10]) << 16) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 9]) << 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 8])
-
-				'''
-				unsigned char	st_info;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_info = ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 12])
-
-				'''
-				unsigned char	st_other;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_other = ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 13])
-
-				'''
-				Elf32_Half		st_shndx;
-				'''
-				# for 32 bit systems only
-				jmpRelEntry.symbol.st_shndx = \
-					(ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 15]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize) + 14])
-
-				# extract name from the string table
-				temp = ""
-				for i in range(
-					(stringTableOffset + stringTableSize 
-					- jmpRelEntry.symbol.st_name)):
-					if (self.data[stringTableOffset 
-						+ jmpRelEntry.symbol.st_name + i] == "\x00"):
+				# check if parsed dynamic symbol already exists
+				# if it does => use already existed dynamic symbol
+				# else => use newly parsed dynamic symbol
+				dynamicSymbolFound = False
+				for dynamicSymbol in self.dynamicSymbolEntries:
+					if (tempSymbol.ElfN_Sym.st_name
+						== dynamicSymbol.ElfN_Sym.st_name
+						and tempSymbol.ElfN_Sym.st_value
+						== dynamicSymbol.ElfN_Sym.st_value
+						and tempSymbol.ElfN_Sym.st_size
+						== dynamicSymbol.ElfN_Sym.st_size
+						and tempSymbol.ElfN_Sym.st_info
+						== dynamicSymbol.ElfN_Sym.st_info
+						and tempSymbol.ElfN_Sym.st_other
+						== dynamicSymbol.ElfN_Sym.st_other
+						and tempSymbol.ElfN_Sym.st_shndx
+						== dynamicSymbol.ElfN_Sym.st_shndx):
+						jmpRelEntry.symbol = dynamicSymbol
+						dynamicSymbolFound = True
 						break
-					temp += self.data[stringTableOffset \
-						+ jmpRelEntry.symbol.st_name + i]
-				jmpRelEntry.name = temp
+				if dynamicSymbolFound == False:
+					jmpRelEntry.symbol = tempSymbol
 
 				# add entry to jump relocation entries list
 				self.jumpRelocationEntries.append(jmpRelEntry)
@@ -1317,6 +1439,7 @@ class ElfParser:
 		# mandatory when DT_RELA is not present)
 		# => parse relocation entries
 		if relOffset != None:
+
 			# create a list for all relocation entries
 			self.relocationEntries = list()
 
@@ -1360,95 +1483,36 @@ class ElfParser:
 				relEntry.r_sym = (relEntry.r_info >> 8)	
 
 				# get values from the symbol table
-				'''
-				Elf32_Word		st_name;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_name = \
-					(ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 3]) \
-					<< 24) \
-					+ (ord(self.data[symbolTableOffset + \
-					(relEntry.r_sym*symbolEntrySize) + 2]) \
-					<< 16) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 1]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize)])
+				tempOffset = symbolTableOffset \
+					+ (relEntry.r_sym*symbolEntrySize)
+				tempSymbol = self._parseDynamicSymbol(tempOffset,
+					stringTableOffset, stringTableSize)
 
-				'''
-				Elf32_Addr		st_value;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_value = \
-					(ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 7]) \
-					<< 24) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 6]) \
-					<< 16) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 5]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 4])
-
-				'''
-				Elf32_Word		st_size;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_size = \
-					(ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 11]) \
-					<< 24) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 10]) \
-					<< 16) \
-					+ (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 9]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 8])
-
-				'''
-				unsigned char	st_info;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_info = ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 12])
-
-				'''
-				unsigned char	st_other;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_other = ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 13])
-
-				'''
-				Elf32_Half		st_shndx;
-				'''
-				# for 32 bit systems only
-				relEntry.symbol.st_shndx = (ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 15]) \
-					<< 8) \
-					+ ord(self.data[symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize) + 14])
-
-				# extract name from the string table
-				temp = ""
-				for i in range(
-					(stringTableOffset + stringTableSize 
-					- relEntry.symbol.st_name)):
-					if (self.data[stringTableOffset 
-						+ relEntry.symbol.st_name + i] == "\x00"):
+				# check if parsed dynamic symbol already exists
+				# if it does => use already existed dynamic symbol
+				# else => use newly parsed dynamic symbol
+				dynamicSymbolFound = False
+				for dynamicSymbol in self.dynamicSymbolEntries:
+					if (tempSymbol.ElfN_Sym.st_name
+						== dynamicSymbol.ElfN_Sym.st_name
+						and tempSymbol.ElfN_Sym.st_value
+						== dynamicSymbol.ElfN_Sym.st_value
+						and tempSymbol.ElfN_Sym.st_size
+						== dynamicSymbol.ElfN_Sym.st_size
+						and tempSymbol.ElfN_Sym.st_info
+						== dynamicSymbol.ElfN_Sym.st_info
+						and tempSymbol.ElfN_Sym.st_other
+						== dynamicSymbol.ElfN_Sym.st_other
+						and tempSymbol.ElfN_Sym.st_shndx
+						== dynamicSymbol.ElfN_Sym.st_shndx):
+						relEntry.symbol = dynamicSymbol
+						dynamicSymbolFound = True
 						break
-					temp += self.data[stringTableOffset \
-						+ relEntry.symbol.st_name + i]
-				relEntry.name = temp
+				if dynamicSymbolFound == False:
+					relEntry.symbol = tempSymbol
 
 				# add entry to relocation entries list
-				self.relocationEntries.append(relEntry)			
+				self.relocationEntries.append(relEntry)
 
 
 	# this function outputs the parsed ELF file (like readelf)
@@ -1665,6 +1729,7 @@ class ElfParser:
 
 		counter = 0
 		for entry in self.jumpRelocationEntries:
+			symbol = entry.symbol.ElfN_Sym
 			print("%d" % counter),
 			print("\t"),
 			print("0x" + ("%x" % entry.r_offset).zfill(8)),
@@ -1691,10 +1756,10 @@ class ElfParser:
 				print("0x%x" % entry.r_type),			
 
 			print("\t"),
-			print("0x" + ("%x" % entry.symbol.st_value).zfill(8)),
+			print("0x" + ("%x" % symbol.st_value).zfill(8)),
 
 			print("\t"),
-			print(entry.name),
+			print(entry.symbol.symbolName),
 
 			print
 
@@ -1730,6 +1795,7 @@ class ElfParser:
 
 		counter = 0
 		for entry in self.relocationEntries:
+			symbol = entry.symbol.ElfN_Sym
 			print("%d" % counter),
 			print("\t"),
 			print("0x" + ("%x" % entry.r_offset).zfill(8)),
@@ -1756,15 +1822,42 @@ class ElfParser:
 				print("0x%x" % entry.r_type),			
 
 			print("\t"),
-			print("0x" + ("%x" % entry.symbol.st_value).zfill(8)),
+			print("0x" + ("%x" % symbol.st_value).zfill(8)),
 
 			print("\t"),
-			print(entry.name),
+			print(entry.symbol.symbolName),
 
 			print
 			counter += 1
 
+		print			
+
+		# output all dynamic symbol entries
+		print("Dynamic symbols (%d entries)" % len(self.dynamicSymbolEntries))
+		print("No."),
+		print("\t"),
+		print("Value"),
+		print("\t\t"),
+		print("Size"),
+		print("\t"),
+		print("Name"),
+		print
+
+		counter = 0
+		for entry in self.dynamicSymbolEntries:
+			symbol = entry.ElfN_Sym
+			print("%d" % counter),
+			print("\t"),
+			print("0x" + ("%x" % symbol.st_value).zfill(8)),
+			print("\t"),
+			print("0x" + ("%x" % symbol.st_size).zfill(3)),
+			print("\t"),
+			print("%s" % entry.symbolName),
+
+			print
+			counter += 1			
 	
+
 	# this function generates a new ELF file from the attributes of the object
 	# return values: (list) generated ELF file data
 	def generateElf(self):
@@ -2133,6 +2226,92 @@ class ElfParser:
 				relSize = dynEntry.d_un
 
 
+		# write dynamic symbols back to dynamic symbol table
+		# (if the dynamic symbol table could be parsed)
+		for i in range(len(self.dynamicSymbolEntries)):
+
+			if symbolTableOffset != None:
+				dynSymEntry = self.dynamicSymbolEntries[i]
+				symbol = dynSymEntry.ElfN_Sym
+
+				'''
+				Elf32_Word		st_name;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+				+ (i * symbolEntrySize) + 0] \
+					= (chr((symbol.st_name >> 0) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 1] \
+					= (chr((symbol.st_name >> 8) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 2] \
+					= (chr((symbol.st_name >> 16) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 3] \
+					= (chr((symbol.st_name >> 24) & 0xff))
+				'''
+				Elf32_Addr		st_value;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 4] \
+					= (chr((symbol.st_value >> 0) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 5] \
+					= (chr((symbol.st_value >> 8) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 6] \
+					= (chr((symbol.st_value >> 16) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 7] \
+					= (chr((symbol.st_value >> 24) & 0xff))	
+
+				'''
+				Elf32_Word		st_size;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 8] \
+					= (chr((symbol.st_size >> 0) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 9] \
+					= (chr((symbol.st_size >> 8) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 10] \
+					= (chr((symbol.st_size >> 16) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 11] \
+					= (chr((symbol.st_size >> 24) & 0xff))
+
+				'''
+				unsigned char	st_info;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 12] \
+					= (chr((symbol.st_info) & 0xff))
+
+				'''
+				unsigned char	st_other;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 13] \
+					= (chr((symbol.st_other) & 0xff))
+
+				'''
+				Elf32_Half		st_shndx;
+				'''
+				# for 32 bit systems only
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 14] \
+					= (chr((symbol.st_shndx >> 0) & 0xff))
+				newfile[symbolTableOffset \
+					+ (i * symbolEntrySize) + 15] \
+					= (chr((symbol.st_shndx >> 8) & 0xff))	
+
+
 		# check if DT_JMPREL entry exists (it is optional 
 		# for ELF executables/shared objects)
 		# => write jump relocation entries back
@@ -2170,9 +2349,15 @@ class ElfParser:
 					= (chr((self.jumpRelocationEntries[i].r_info \
 					>> 24) & 0xff))
 
-				# write symbols back to symbol table
-				if symbolTableOffset != None:
-					jmpRelEntry = self.jumpRelocationEntries[i]
+				# check if dynamic symbol was already written
+				# when writing all dynamic symbol entries back
+				# if not => write dynamic symbol back
+				jmpRelEntry = self.jumpRelocationEntries[i]
+				dynSym = jmpRelEntry.symbol				
+				if (not dynSym in self.dynamicSymbolEntries
+					and symbolTableOffset != None):
+
+					symbol = dynSym.ElfN_Sym
 
 					'''
 					Elf32_Word		st_name;
@@ -2180,16 +2365,16 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 0] \
-						= (chr((jmpRelEntry.symbol.st_name >> 0) & 0xff))
+						= (chr((symbol.st_name >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 1] \
-						= (chr((jmpRelEntry.symbol.st_name >> 8) & 0xff))
+						= (chr((symbol.st_name >> 8) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 2] \
-						= (chr((jmpRelEntry.symbol.st_name >> 16) & 0xff))
+						= (chr((symbol.st_name >> 16) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 3] \
-						= (chr((jmpRelEntry.symbol.st_name >> 24) & 0xff))
+						= (chr((symbol.st_name >> 24) & 0xff))
 
 					'''
 					Elf32_Addr		st_value;
@@ -2197,16 +2382,16 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 4] \
-						= (chr((jmpRelEntry.symbol.st_value >> 0) & 0xff))
+						= (chr((symbol.st_value >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 5] \
-						= (chr((jmpRelEntry.symbol.st_value >> 8) & 0xff))
+						= (chr((symbol.st_value >> 8) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 6] \
-						= (chr((jmpRelEntry.symbol.st_value >> 16) & 0xff))
+						= (chr((symbol.st_value >> 16) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 7] \
-						= (chr((jmpRelEntry.symbol.st_value >> 24) & 0xff))	
+						= (chr((symbol.st_value >> 24) & 0xff))	
 
 					'''
 					Elf32_Word		st_size;
@@ -2214,16 +2399,16 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 8] \
-						= (chr((jmpRelEntry.symbol.st_size >> 0) & 0xff))
+						= (chr((symbol.st_size >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 9] \
-						= (chr((jmpRelEntry.symbol.st_size >> 8) & 0xff))
+						= (chr((symbol.st_size >> 8) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 10] \
-						= (chr((jmpRelEntry.symbol.st_size >> 16) & 0xff))
+						= (chr((symbol.st_size >> 16) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 11] \
-						= (chr((jmpRelEntry.symbol.st_size >> 24) & 0xff))
+						= (chr((symbol.st_size >> 24) & 0xff))
 
 					'''
 					unsigned char	st_info;
@@ -2231,7 +2416,7 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 12] \
-						= (chr((jmpRelEntry.symbol.st_info) & 0xff))
+						= (chr((symbol.st_info) & 0xff))
 
 					'''
 					unsigned char	st_other;
@@ -2239,7 +2424,7 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 13] \
-						= (chr((jmpRelEntry.symbol.st_other) & 0xff))
+						= (chr((symbol.st_other) & 0xff))
 
 					'''
 					Elf32_Half		st_shndx;
@@ -2247,10 +2432,10 @@ class ElfParser:
 					# for 32 bit systems only
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 14] \
-						= (chr((jmpRelEntry.symbol.st_shndx >> 0) & 0xff))
+						= (chr((symbol.st_shndx >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 15] \
-						= (chr((jmpRelEntry.symbol.st_shndx >> 8) & 0xff))	
+						= (chr((symbol.st_shndx >> 8) & 0xff))	
 
 
 		# check if DT_REL entry exists (DT_REL is only mandatory 
@@ -2283,6 +2468,94 @@ class ElfParser:
 					= (chr((self.relocationEntries[i].r_info >> 16) & 0xff))
 				newfile[relOffset + (i*relEntrySize) + 7] \
 					= (chr((self.relocationEntries[i].r_info >> 24) & 0xff))
+
+				# check if dynamic symbol was already written
+				# when writing all dynamic symbol entries back
+				# if not => write dynamic symbol back
+				relEntry = self.relocationEntries[i]
+				dynSym = relEntry.symbol				
+				if (not dynSym in self.dynamicSymbolEntries
+					and symbolTableOffset != None):
+
+					symbol = dynSym.ElfN_Sym
+
+					'''
+					Elf32_Word		st_name;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 0] \
+						= (chr((symbol.st_name >> 0) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 1] \
+						= (chr((symbol.st_name >> 8) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 2] \
+						= (chr((symbol.st_name >> 16) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 3] \
+						= (chr((symbol.st_name >> 24) & 0xff))
+
+					'''
+					Elf32_Addr		st_value;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 4] \
+						= (chr((symbol.st_value >> 0) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 5] \
+						= (chr((symbol.st_value >> 8) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 6] \
+						= (chr((symbol.st_value >> 16) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 7] \
+						= (chr((symbol.st_value >> 24) & 0xff))	
+
+					'''
+					Elf32_Word		st_size;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 8] \
+						= (chr((symbol.st_size >> 0) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 9] \
+						= (chr((symbol.st_size >> 8) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 10] \
+						= (chr((symbol.st_size >> 16) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 11] \
+						= (chr((symbol.st_size >> 24) & 0xff))
+
+					'''
+					unsigned char	st_info;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 12] \
+						= (chr((symbol.st_info) & 0xff))
+
+					'''
+					unsigned char	st_other;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 13] \
+						= (chr((symbol.st_other) & 0xff))
+
+					'''
+					Elf32_Half		st_shndx;
+					'''
+					# for 32 bit systems only
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 14] \
+						= (chr((symbol.st_shndx >> 0) & 0xff))
+					newfile[symbolTableOffset \
+						+ (relEntry.r_sym * symbolEntrySize) + 15] \
+						= (chr((symbol.st_shndx >> 8) & 0xff))	
 
 		# ------
 

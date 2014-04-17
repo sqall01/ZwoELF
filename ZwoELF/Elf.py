@@ -6,6 +6,30 @@
 # 
 # Licensed under the GNU Public License, version 2.
 
+class Section:
+
+	def __init__(self):
+		self.sectionName = ""
+		# for 32 bit systems only
+		self.elfN_shdr = Elf32_Shdr() # change here to load Elf64_Shdr
+
+
+class Segment:
+
+	def __init__(self):
+		# for 32 bit systems only
+		self.elfN_Phdr = Elf32_Phdr() # change here to load Elf64_Phdr
+		self.sectionsWithin = list()
+		self.segmentsWithin = list()
+
+
+class DynamicSymbol:
+
+	def __init__(self):
+		self.ElfN_Sym = ElfN_Sym()
+		self.symbolName = ""
+
+
 class ElfN_Ehdr:
 
 	class EI_OSABI:
@@ -623,9 +647,7 @@ class ElfN_Rel:
 		self.r_sym = None
 
 		# for 32 bit systems
-		self.symbol = ElfN_Sym()
-
-		self.name = ""
+		self.symbol = DynamicSymbol()
 
 
 class ElfN_Sym:
