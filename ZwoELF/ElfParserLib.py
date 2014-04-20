@@ -2754,58 +2754,132 @@ class ElfParser:
 		newSectionAddr, newSectionOffset, newSectionSize, newSectionLink, 
 		newSectionInfo, newSectionAddrAlign, newSectionEntsize):
 
-		# get index in the string table of the name of the new section 
-		# (use size of string table to just append new name to string table)
-		newSectionStringTableIndex \
-			= self.sections[self.header.e_shstrndx].elfN_shdr.sh_size
+		# check if sections do not exist
+		# => create new section header table
+		if len(self.sections) == 0:
 
-		# generate new section object
-		# generateNewSection(sectionName, sh_name, sh_type, sh_flags, sh_addr,
-		# sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize)
-		newsection = self.generateNewSection(newSectionName, 
-			newSectionStringTableIndex, newSectionType, newSectionFlag, 
-			newSectionAddr, newSectionOffset, newSectionSize, newSectionLink, 
-			newSectionInfo, newSectionAddrAlign, newSectionEntsize)
+			# restore section header entry size
+			# for 32 bit systems only
+			self.header.e_shentsize = 40
 
-		# get position of new section
-		positionNewSection = None
-		for i in range(self.header.e_shnum):
-			if (i+1) < self.header.e_shnum:
-				if (self.sections[i].elfN_shdr.sh_offset < newSectionOffset 
-					and self.sections[i+1].elfN_shdr.sh_offset 
-					>= newSectionOffset):
-					positionNewSection = i+1
+			# when using gcc, first section is NULL section
+			# => create one and add it
+			# generateNewSection(sectionName, sh_name, sh_type, 
+			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
+			# sh_info, sh_addralign, sh_entsize)			
+			newNullSection = self.generateNewSection("", 0, SH_type.SHT_NULL, 0
+				, 0, 0, 0, 0, 0, 0, 0)
+			self.sections.append(newNullSection)
 
-					# if new section comes before string table section 
-					# => adjust string table section index
-					if positionNewSection <= self.header.e_shstrndx:
-						self.header.e_shstrndx += 1
-					break
-		# insert new section at calculated position
-		if positionNewSection == None:
-			self.sections.append(newsection)
+			# increase count of sections
+			self.header.e_shnum += 1
+
+			# create new ".shstrtab" section (section header string table)
+			# and add it to the end of the file
+			offsetNewShstrtab = len(self.data)
+			nameNewShstrtab = ".shstrtab"
+
+			# use third entry in new section header string table
+			# as index for the new created section (name for ".shstrtab" is 
+			# second, name for NULL section first)
+			newSectionStringTableIndex = len(nameNewShstrtab) + 1 + 1
+
+			# generate new section object and add it
+			# generateNewSection(sectionName, sh_name, sh_type, 
+			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
+			# sh_info, sh_addralign, sh_entsize)
+			newSection = self.generateNewSection(newSectionName, 
+				newSectionStringTableIndex, newSectionType, newSectionFlag, 
+				newSectionAddr, newSectionOffset, newSectionSize, 
+				newSectionLink, newSectionInfo, newSectionAddrAlign, 
+				newSectionEntsize)
+			self.sections.append(newSection)
+
+			# increase count of sections
+			self.header.e_shnum += 1
+
+			# calculate length of ".shstrtab" section
+			lengthNewShstrtab = len(nameNewShstrtab) + 1 \
+				+ len(newSectionName) + 1 + 1
+
+			# generate ".shstrtab" section object and add it
+			# generateNewSection(sectionName, sh_name, sh_type, 
+			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
+			# sh_info, sh_addralign, sh_entsize)			
+			newShstrtabsection = self.generateNewSection(nameNewShstrtab, 
+				1, SH_type.SHT_STRTAB, 0, 
+				0, offsetNewShstrtab, lengthNewShstrtab, 0, 0, 1, 0)
+			self.sections.append(newShstrtabsection)
+
+			# increase count of sections
+			self.header.e_shnum += 1
+
+			# add section header table to the end of the file new file
+			self.header.e_shoff = offsetNewShstrtab + lengthNewShstrtab
+
+			# new section string table index is the third section
+			self.header.e_shstrndx = 2
+
+
+		# sections exist
+		# => just add section
 		else:
-			self.sections.insert(positionNewSection, newsection)
+			# get index in the string table of the name of the new section 
+			# (use size of string table to just append new name to string 
+			# table)
+			newSectionStringTableIndex \
+				= self.sections[self.header.e_shstrndx].elfN_shdr.sh_size
 
-		# section header table lies oft directly behind the string table
-		# check if new section name would overwrite data of 
-		# section header table
-		# => move section header table
-		if (self.header.e_shoff 
-			>= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
-			+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size) 
-			and self.header.e_shoff 
-			<= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
-			+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size 
-			+ len(newSectionName) + 1)):
-			self.header.e_shoff += len(newSectionName) + 1
+			# generate new section object
+			# generateNewSection(sectionName, sh_name, sh_type, 
+			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
+			# sh_info, sh_addralign, sh_entsize)
+			newsection = self.generateNewSection(newSectionName, 
+				newSectionStringTableIndex, newSectionType, newSectionFlag, 
+				newSectionAddr, newSectionOffset, newSectionSize, 
+				newSectionLink, newSectionInfo, newSectionAddrAlign, 
+				newSectionEntsize)
 
-		# add size of new name to string table + 1 for null-terminated C string
-		self.sections[self.header.e_shstrndx].elfN_shdr.sh_size \
-			+= len(newSectionName) + 1
+			# get position of new section
+			positionNewSection = None
+			for i in range(self.header.e_shnum):
+				if (i+1) < self.header.e_shnum:
+					if (self.sections[i].elfN_shdr.sh_offset < newSectionOffset
+						and self.sections[i+1].elfN_shdr.sh_offset 
+						>= newSectionOffset):
+						positionNewSection = i+1
 
-		# increase count of sections
-		self.header.e_shnum += 1
+						# if new section comes before string table section 
+						# => adjust string table section index
+						if positionNewSection <= self.header.e_shstrndx:
+							self.header.e_shstrndx += 1
+						break
+			# insert new section at calculated position
+			if positionNewSection == None:
+				self.sections.append(newsection)
+			else:
+				self.sections.insert(positionNewSection, newsection)
+
+			# section header table lies oft directly behind the string table
+			# check if new section name would overwrite data of 
+			# section header table
+			# => move section header table
+			if (self.header.e_shoff 
+				>= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
+				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size) 
+				and self.header.e_shoff 
+				<= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
+				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size 
+				+ len(newSectionName) + 1)):
+				self.header.e_shoff += len(newSectionName) + 1
+
+			# add size of new name to string table + 1 for 
+			# null-terminated C string
+			self.sections[self.header.e_shstrndx].elfN_shdr.sh_size \
+				+= len(newSectionName) + 1
+
+			# increase count of sections
+			self.header.e_shnum += 1
 
 
 	# this function extends the section size by the given size
