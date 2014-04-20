@@ -31,7 +31,7 @@ class ElfParser:
 		self.data = list()
 
 		# read file and convert data to list
-		f = open(filename, "r")
+		f = open(filename, "rb")
 		f.seek(self.startOffset, 0)
 		self.data = list(f.read())
 		f.close()
