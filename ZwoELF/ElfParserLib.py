@@ -18,15 +18,16 @@ from Elf import ElfN_Ehdr, Shstrndx, Elf32_Shdr, SH_flags, SH_type, \
 class ElfParser:
 
 	def __init__(self, filename, force=False, startOffset=0, 
-		forceDynSymParsing=0):
+		forceDynSymParsing=0, onlyParseHeader=False):
 		self.forceDynSymParsing = forceDynSymParsing
 		self.header = None
-		self.segments = None
-		self.sections = None
+		self.segments = list()
+		self.sections = list()
+		self.fileParsed = False
 		self.dynamicSymbolEntries = list()
-		self.dynamicSegmentEntries = None
-		self.jumpRelocationEntries = None
-		self.relocationEntries = None
+		self.dynamicSegmentEntries = list()
+		self.jumpRelocationEntries = list()
+		self.relocationEntries = list()
 		self.startOffset = startOffset
 		self.data = list()
 
@@ -37,24 +38,27 @@ class ElfParser:
 		f.close()
 
 		# parse ELF file
-		self.parseElf(self.data)
+		self.parseElf(self.data, onlyParseHeader=onlyParseHeader)
 
-		# generate md5 hash of file that was parsed
-		tempHash = hashlib.md5()
-		tempHash.update("".join(self.data))
-		oldFileHash = tempHash.digest()
+		# check if file was completely parsed
+		if self.fileParsed == True:
+			# generate md5 hash of file that was parsed
+			tempHash = hashlib.md5()
+			tempHash.update("".join(self.data))
+			oldFileHash = tempHash.digest()
 
-		# generate md5 hash of file that was newly generated
-		tempHash = hashlib.md5()
-		tempHash.update("".join(self.generateElf()))
-		newFileHash = tempHash.digest()
+			# generate md5 hash of file that was newly generated
+			tempHash = hashlib.md5()
+			tempHash.update("".join(self.generateElf()))
+			newFileHash = tempHash.digest()
 
-		# check if parsed ELF file and new generated one are the same
-		if oldFileHash != newFileHash and force == False:
-			raise NotImplementedError('Not able to parse and re-generate ELF' \
-				+ ' file correctly. This can happen when the ELF file is ' \
-				+ ' parsed out of an other file like a core dump.' \
-				+ ' Use "force=True" to ignore this check.')
+			# check if parsed ELF file and new generated one are the same
+			if oldFileHash != newFileHash and force == False:
+				raise NotImplementedError('Not able to parse and ' \
+					+ 're-generate ELF file correctly. This can happen '\
+					+ 'when the ELF file is parsed out of an other file '\
+					+ 'like a core dump. Use "force=True" to ignore this '\
+					+ 'check.')
 
 
 	# this function converts a section header entry to a list of data
@@ -263,6 +267,11 @@ class ElfParser:
 	# return values: (DynamicSymbol) the parsed dynamic symbol
 	def _parseDynamicSymbol(self, offset, stringTableOffset, stringTableSize):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		tempSymbol = DynamicSymbol()
 
 		# get values from the symbol table
@@ -338,7 +347,7 @@ class ElfParser:
 
 	# this function parses the ELF file
 	# return values: None
-	def parseElf(self, buffer_list):
+	def parseElf(self, buffer_list, onlyParseHeader=False):
 
 		###############################################
 		# parse ELF header
@@ -635,6 +644,17 @@ class ElfParser:
 		# check if e_machine is supported at the moment
 		if not (self.header.e_machine == ElfN_Ehdr.E_machine.EM_386):
 			raise NotImplementedError("Only e_machine EM_386 is supported yet")
+
+
+		# check if only the header of the ELF file should be parsed
+		# for example to speed up the process for checking if a list of files
+		# are valid ELF files
+		if onlyParseHeader == True:
+			return
+
+		# mark file as completely parsed (actually it is just parsing
+		# but without this flag internal functions will not work)
+		self.fileParsed = True
 
 
 		###############################################
@@ -1520,6 +1540,11 @@ class ElfParser:
 	# return values: None
 	def printElf(self):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# output header
 		print "ELF header:"
 		print "Type: %s" % ElfN_Ehdr.E_type.reverse_lookup[self.header.e_type]
@@ -1862,6 +1887,11 @@ class ElfParser:
 	# this function generates a new ELF file from the attributes of the object
 	# return values: (list) generated ELF file data
 	def generateElf(self):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# copy binary data to new list
 		newfile = list(self.data)
@@ -2566,6 +2596,12 @@ class ElfParser:
 	# this function writes the generated ELF file back
 	# return values: None
 	def writeElf(self, filename):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		f = open(filename, "w")
 		f.write("".join(self.generateElf()))
 		f.close()
@@ -2576,6 +2612,11 @@ class ElfParser:
 	# (int) address in memory of appended data
 	def appendDataToSegment(self, data, segmentNumber, addNewSection=False,
 		newSectionName=None, extendExistingSection=False):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		segmentToExtend = self.segments[segmentNumber]
 
@@ -2754,6 +2795,11 @@ class ElfParser:
 		newSectionAddr, newSectionOffset, newSectionSize, newSectionLink, 
 		newSectionInfo, newSectionAddrAlign, newSectionEntsize):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# check if sections do not exist
 		# => create new section header table
 		if len(self.sections) == 0:
@@ -2885,6 +2931,12 @@ class ElfParser:
 	# this function extends the section size by the given size
 	# return values: None
 	def extendSection(self, sectionToExtend, size):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		sectionToExtend.elfN_shdr.sh_size += size
 
 
@@ -2895,6 +2947,11 @@ class ElfParser:
 	# (int) address in memory of appended data
 	def appendDataToExecutableSegment(self, data, addNewSection=False, 
 		newSectionName=None, extendExistingSection=False):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# get all executable segments from type PT_LOAD
 		possibleSegments = list()
@@ -2950,6 +3007,11 @@ class ElfParser:
 	# both None if no following segment was found
 	def getNextSegmentAndFreeSpace(self, segmentToSearch):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# find segment that comes directly after the segment to 
 		# manipulate in the virtual memory
 		diff_p_vaddr = None
@@ -2978,6 +3040,12 @@ class ElfParser:
 	# which returns only the free space in memory after the segment
 	# return values: (int) free space; None if no following segment was found
 	def getFreeSpaceAfterSegment(self, segmentToSearch):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		nextSegment, diff_p_vaddr \
 			= self.getNextSegmentAndFreeSpace(segmentToSearch)
 		return diff_p_vaddr
@@ -2986,6 +3054,12 @@ class ElfParser:
 	# this function removes all section header entries
 	# return values: None
 	def removeSectionHeaderTable(self):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		self.header.e_shoff = 0
 		self.header.e_shnum = 0
 		self.header.e_shentsize = 0
@@ -2996,6 +3070,11 @@ class ElfParser:
 	# this function overwrites data on the given offset 
 	# return values: None
 	def writeDataToFileOffset(self, offset, data, force=False):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# get the segment to which the changed data belongs to
 		segmentToManipulate = None
@@ -3032,6 +3111,11 @@ class ElfParser:
 	# return value: (int) offset in file (or None if not found)
 	def virtualMemoryAddrToFileOffset(self, memoryAddr):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# get the segment to which the virtual memory address belongs to
 		foundSegment = None
 		for segment in self.segments:
@@ -3065,6 +3149,11 @@ class ElfParser:
 	# return value: (int) virtual memory address (or None if not found)
 	def fileOffsetToVirtualMemoryAddr(self, offset):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# get the segment to which the file offset belongs to
 		foundSegment = None
 		for segment in self.segments:
@@ -3090,6 +3179,11 @@ class ElfParser:
 	# (global offset table) in the file
 	# return values: None
 	def modifyGotEntryAddr(self, name, memoryAddr):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# search for name in jump relocation entries
 		entryToModify = None
@@ -3122,6 +3216,11 @@ class ElfParser:
 	# return values: (int) value (memory address) of got entry
 	def getValueOfGotEntry(self, name):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# search for name in jump relocation entries
 		entryToModify = None
 		for jmpEntry in self.jumpRelocationEntries:
@@ -3150,6 +3249,11 @@ class ElfParser:
 	# return values: (int) memory address of got entry
 	def getMemAddrOfGotEntry(self, name):
 
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
+
 		# search for name in jump relocation entries
 		entryToSearch = None
 		for jmpEntry in self.jumpRelocationEntries:
@@ -3166,6 +3270,11 @@ class ElfParser:
 	# this functions removes the first section given by name
 	# return values: None
 	def deleteSectionByName(self, name):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# search for the first section with the given name
 		found = False
@@ -3193,6 +3302,11 @@ class ElfParser:
 	# this function searches for the first jump relocation entry given by name
 	# return values: (ElfN_Rel) jump relocation entry
 	def getJmpRelEntryByName(self, name):
+
+		# check if the file was completely parsed before
+		if self.fileParsed == False:
+			raise ValueError("Operation not possible. " \
+				+ "File was not completely parsed before.")
 
 		# search for the first jump relocation entry with the given name
 		foundEntry = None
