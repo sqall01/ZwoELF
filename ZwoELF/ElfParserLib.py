@@ -399,7 +399,7 @@ class ElfParser:
 
 		This member specifies the required architecture for an individual file.
 		'''
-		self.header.e_machine = ord(buffer_list[19])*0x10 \
+		self.header.e_machine = ord(buffer_list[19])*0x100 \
 			+ ord(buffer_list[18])
 
 
