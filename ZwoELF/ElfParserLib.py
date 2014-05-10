@@ -41,7 +41,7 @@ class ElfParser:
 		self.parseElf(self.data, onlyParseHeader=onlyParseHeader)
 
 		# check if file was completely parsed
-		if self.fileParsed == True:
+		if self.fileParsed is True:
 			# generate md5 hash of file that was parsed
 			tempHash = hashlib.md5()
 			tempHash.update("".join(self.data))
@@ -53,7 +53,7 @@ class ElfParser:
 			newFileHash = tempHash.digest()
 
 			# check if parsed ELF file and new generated one are the same
-			if oldFileHash != newFileHash and force == False:
+			if oldFileHash != newFileHash and force is False:
 				raise NotImplementedError('Not able to parse and ' \
 					+ 're-generate ELF file correctly. This can happen '\
 					+ 'when the ELF file is parsed out of an other file '\
@@ -268,7 +268,7 @@ class ElfParser:
 	def _parseDynamicSymbol(self, offset, stringTableOffset, stringTableSize):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -649,7 +649,7 @@ class ElfParser:
 		# check if only the header of the ELF file should be parsed
 		# for example to speed up the process for checking if a list of files
 		# are valid ELF files
-		if onlyParseHeader == True:
+		if onlyParseHeader is True:
 			return
 
 		# mark file as completely parsed (actually it is just parsing
@@ -1145,7 +1145,7 @@ class ElfParser:
 			if segment.elfN_Phdr.p_type == P_type.PT_DYNAMIC:
 				dynamicSegment = segment
 				break
-		if dynamicSegment == None:
+		if dynamicSegment is None:
 			raise ValueError("Segment of type PT_DYNAMIC was not found.")
 
 		# create a list for all dynamic segment entries
@@ -1256,10 +1256,10 @@ class ElfParser:
 
 
 		# check if ELF got needed entries
-		if (stringTableOffset == None
-			or stringTableSize == None
-			or symbolTableOffset == None
-			or symbolEntrySize == None):
+		if (stringTableOffset is None
+			or stringTableSize is None
+			or symbolTableOffset is None
+			or symbolEntrySize is None):
 			raise ValueError("No dynamic section entry of type DT_STRTAB," \
 				" DT_STRSZ, DT_SYMTAB and/or DT_SYMENT found (malformed ELF" \
 				" executable/shared object).")
@@ -1282,7 +1282,7 @@ class ElfParser:
 				# check if .dynsym section only exists once
 				# (because section entries are optional and can
 				# be easily manipulated)
-				if dynSymSection == None:
+				if dynSymSection is None:
 					dynSymSection = section
 
 				# when .dynsym section exists multiple times
@@ -1292,13 +1292,13 @@ class ElfParser:
 					break
 
 		# check if .dynsym section exists
-		if dynSymSection == None:
+		if dynSymSection is None:
 			print 'NOTE: ".dynsym" section was not found. Trying to use ' \
 				+ 'estimation to parse all symbols from the symbol table'
 			dynSymSectionIgnore = True
 
 		# check if .dynsym section was found multiple times
-		elif dynSymSectionDuplicated == True:
+		elif dynSymSectionDuplicated is True:
 			print 'NOTE: ".dynsym" section was found multiple times. ' \
 				+ 'Trying to use estimation to parse all symbols from' \
 				+ 'the symbol table'
@@ -1346,7 +1346,7 @@ class ElfParser:
 				raise TypeError('"forceDynSymParsing" uses an invalid value.')
 
 		# use ".dynsym" section information (when considered correct)
-		if dynSymSectionIgnore == False:
+		if dynSymSectionIgnore is False:
 
 			# parse the complete symbol table based on the
 			# ".dynsym" section
@@ -1361,8 +1361,8 @@ class ElfParser:
 				self.dynamicSymbolEntries.append(tempSymbol)
 
 		# use estimation to parse dynamic symbols
-		elif (dynSymSectionIgnore == True
-			and dynSymEstimationIgnore == False):
+		elif (dynSymSectionIgnore is True
+			and dynSymEstimationIgnore is False):
 
 			# parse the complete symbol table based on the
 			# estimation
@@ -1380,7 +1380,7 @@ class ElfParser:
 		# check if DT_JMPREL entry exists (it is optional for ELF
 		# executables/shared objects)
 		# => parse jump relocation entries
-		if jmpRelOffset != None:
+		if jmpRelOffset is not None:
 
 			# create a list for all jump relocation entries
 			self.jumpRelocationEntries = list()
@@ -1449,7 +1449,7 @@ class ElfParser:
 						jmpRelEntry.symbol = dynamicSymbol
 						dynamicSymbolFound = True
 						break
-				if dynamicSymbolFound == False:
+				if dynamicSymbolFound is False:
 					jmpRelEntry.symbol = tempSymbol
 
 				# add entry to jump relocation entries list
@@ -1459,7 +1459,7 @@ class ElfParser:
 		# check if DT_REL entry exists (DT_REL is only 
 		# mandatory when DT_RELA is not present)
 		# => parse relocation entries
-		if relOffset != None:
+		if relOffset is not None:
 
 			# create a list for all relocation entries
 			self.relocationEntries = list()
@@ -1529,7 +1529,7 @@ class ElfParser:
 						relEntry.symbol = dynamicSymbol
 						dynamicSymbolFound = True
 						break
-				if dynamicSymbolFound == False:
+				if dynamicSymbolFound is False:
 					relEntry.symbol = tempSymbol
 
 				# add entry to relocation entries list
@@ -1541,7 +1541,7 @@ class ElfParser:
 	def printElf(self):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -1691,10 +1691,10 @@ class ElfParser:
 			if searchEntry.d_tag == D_tag.DT_SYMENT:
 				symbolEntrySize = searchEntry.d_un
 
-		if (stringTableOffset == None
-			or stringTableSize == None
-			or symbolTableOffset == None
-			or symbolEntrySize == None):
+		if (stringTableOffset is None
+			or stringTableSize is None
+			or symbolTableOffset is None
+			or symbolEntrySize is None):
 			raise ValueError("No dynamic section entry of type DT_STRTAB," \
 				+ " DT_STRSZ, DT_SYMTAB and/or DT_SYMENT found (malformed"\
 				+ " ELF executable/shared object).")
@@ -1889,7 +1889,7 @@ class ElfParser:
 	def generateElf(self):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2175,7 +2175,7 @@ class ElfParser:
 			if segment.elfN_Phdr.p_type == P_type.PT_DYNAMIC:
 				dynamicSegment = segment
 				break
-		if dynamicSegment == None:
+		if dynamicSegment is None:
 			raise ValueError("Segment of type PT_DYNAMIC was not found.")
 
 		# write all dynamic segment entries back
@@ -2261,7 +2261,7 @@ class ElfParser:
 		# (if the dynamic symbol table could be parsed)
 		for i in range(len(self.dynamicSymbolEntries)):
 
-			if symbolTableOffset != None:
+			if symbolTableOffset is not None:
 				dynSymEntry = self.dynamicSymbolEntries[i]
 				symbol = dynSymEntry.ElfN_Sym
 
@@ -2346,7 +2346,7 @@ class ElfParser:
 		# check if DT_JMPREL entry exists (it is optional 
 		# for ELF executables/shared objects)
 		# => write jump relocation entries back
-		if jmpRelOffset != None:
+		if jmpRelOffset is not None:
 			for i in range(len(self.jumpRelocationEntries)):
 				'''
 				Elf32_Addr    r_offset;
@@ -2385,8 +2385,8 @@ class ElfParser:
 				# if not => write dynamic symbol back
 				jmpRelEntry = self.jumpRelocationEntries[i]
 				dynSym = jmpRelEntry.symbol				
-				if (not dynSym in self.dynamicSymbolEntries
-					and symbolTableOffset != None):
+				if (dynSym not in self.dynamicSymbolEntries
+					and symbolTableOffset is not None):
 
 					symbol = dynSym.ElfN_Sym
 
@@ -2472,7 +2472,7 @@ class ElfParser:
 		# check if DT_REL entry exists (DT_REL is only mandatory 
 		# when DT_RELA is not present)
 		# => write relocation entries back
-		if relOffset != None:
+		if relOffset is not None:
 			for i in range(len(self.relocationEntries)):
 				'''
 				Elf32_Addr    r_offset;
@@ -2505,8 +2505,8 @@ class ElfParser:
 				# if not => write dynamic symbol back
 				relEntry = self.relocationEntries[i]
 				dynSym = relEntry.symbol				
-				if (not dynSym in self.dynamicSymbolEntries
-					and symbolTableOffset != None):
+				if (dynSym not in self.dynamicSymbolEntries
+					and symbolTableOffset is not None):
 
 					symbol = dynSym.ElfN_Sym
 
@@ -2598,7 +2598,7 @@ class ElfParser:
 	def writeElf(self, filename):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2614,7 +2614,7 @@ class ElfParser:
 		newSectionName=None, extendExistingSection=False):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2627,7 +2627,7 @@ class ElfParser:
 
 		# check if a segment exists directly after the segment 
 		# to manipulate in the virtual memory
-		if nextSegment == None: 
+		if nextSegment is None:
 			# segment directly after segment to 
 			# manipulate does not exist in virtual memory
 
@@ -2770,7 +2770,7 @@ class ElfParser:
 					== newDataMemoryAddr):
 					# check if data is not appended to last section 
 					# => use free space between segments for section 
-					if diff_p_vaddr != None:
+					if diff_p_vaddr is not None:
 						# extend the existing section
 						self.extendSection(section, diff_p_vaddr)
 					else:
@@ -2796,7 +2796,7 @@ class ElfParser:
 		newSectionInfo, newSectionAddrAlign, newSectionEntsize):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2901,7 +2901,7 @@ class ElfParser:
 							self.header.e_shstrndx += 1
 						break
 			# insert new section at calculated position
-			if positionNewSection == None:
+			if positionNewSection is None:
 				self.sections.append(newsection)
 			else:
 				self.sections.insert(positionNewSection, newsection)
@@ -2933,7 +2933,7 @@ class ElfParser:
 	def extendSection(self, sectionToExtend, size):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2949,7 +2949,7 @@ class ElfParser:
 		newSectionName=None, extendExistingSection=False):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -2972,7 +2972,7 @@ class ElfParser:
 					if ((self.segments[i].elfN_Phdr.p_vaddr 
 						- (possibleSegment.elfN_Phdr.p_vaddr 
 						+ possibleSegment.elfN_Phdr.p_memsz)) > 0):
-						if (diff_p_vaddr == None 
+						if (diff_p_vaddr is None
 							or (self.segments[i].elfN_Phdr.p_vaddr 
 							- (possibleSegment.elfN_Phdr.p_vaddr 
 							+ possibleSegment.elfN_Phdr.p_memsz)) 
@@ -3008,7 +3008,7 @@ class ElfParser:
 	def getNextSegmentAndFreeSpace(self, segmentToSearch):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3021,7 +3021,7 @@ class ElfParser:
 				if ((segment.elfN_Phdr.p_vaddr 
 					- (segmentToSearch.elfN_Phdr.p_vaddr 
 					+ segmentToSearch.elfN_Phdr.p_memsz)) > 0):
-					if (diff_p_vaddr == None 
+					if (diff_p_vaddr is None
 						or (segment.elfN_Phdr.p_vaddr 
 						- (segmentToSearch.elfN_Phdr.p_vaddr 
 						+ segmentToSearch.elfN_Phdr.p_memsz)) 
@@ -3042,7 +3042,7 @@ class ElfParser:
 	def getFreeSpaceAfterSegment(self, segmentToSearch):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3056,7 +3056,7 @@ class ElfParser:
 	def removeSectionHeaderTable(self):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3072,7 +3072,7 @@ class ElfParser:
 	def writeDataToFileOffset(self, offset, data, force=False):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3086,8 +3086,8 @@ class ElfParser:
 				break
 
 		# check if segment was found
-		if (segmentToManipulate == None 
-			and force == False):
+		if (segmentToManipulate is None
+			and force is False):
 			raise ValueError('Segment with offset 0x%x not found ' \
 				+ '(use "force=True" to ignore this check).' % offset)
 
@@ -3096,7 +3096,7 @@ class ElfParser:
 
 		# check if data to manipulate fits in segment
 		if (len(data) > (segmentToManipulate.elfN_Phdr.p_filesz - dataPosition)
-			and force == False):
+			and force is False):
 			raise ValueError('Size of data to manipulate: %d Not enough ' \
 				+ 'space in segment (Available: %d; use "force=True" to ' \
 				+ 'ignore this check).' % (len(data), 
@@ -3112,7 +3112,7 @@ class ElfParser:
 	def virtualMemoryAddrToFileOffset(self, memoryAddr):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3126,7 +3126,7 @@ class ElfParser:
 				break
 
 		# check if segment was found
-		if foundSegment == None:
+		if foundSegment is None:
 			return None
 
 		# check if file is mapped 1:1 to memory
@@ -3150,7 +3150,7 @@ class ElfParser:
 	def fileOffsetToVirtualMemoryAddr(self, offset):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3164,7 +3164,7 @@ class ElfParser:
 				break
 
 		# check if segment was found
-		if foundSegment == None:
+		if foundSegment is None:
 			return None
 
 		# check if file is mapped 1:1 to memory
@@ -3181,7 +3181,7 @@ class ElfParser:
 	def modifyGotEntryAddr(self, name, memoryAddr):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3191,7 +3191,7 @@ class ElfParser:
 			if jmpEntry.name == name:
 				entryToModify = jmpEntry
 				break
-		if entryToModify == None:
+		if entryToModify is None:
 			raise ValueError('Jump relocation entry with the name "%s" ' \
 				+ 'was not found.' % name)
 
@@ -3217,7 +3217,7 @@ class ElfParser:
 	def getValueOfGotEntry(self, name):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3227,7 +3227,7 @@ class ElfParser:
 			if jmpEntry.name == name:
 				entryToModify = jmpEntry
 				break
-		if entryToModify == None:
+		if entryToModify is None:
 			raise ValueError('Jump relocation entry with the name "%s" ' \
 				+ 'was not found.' % name)
 
@@ -3250,7 +3250,7 @@ class ElfParser:
 	def getMemAddrOfGotEntry(self, name):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3260,7 +3260,7 @@ class ElfParser:
 			if jmpEntry.name == name:
 				entryToSearch = jmpEntry
 				break
-		if entryToSearch == None:
+		if entryToSearch is None:
 			raise ValueError('Jump relocation entry with the name "%s"' \
 				+ ' was not found.' % name)
 
@@ -3272,7 +3272,7 @@ class ElfParser:
 	def deleteSectionByName(self, name):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3304,7 +3304,7 @@ class ElfParser:
 	def getJmpRelEntryByName(self, name):
 
 		# check if the file was completely parsed before
-		if self.fileParsed == False:
+		if self.fileParsed is False:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
@@ -3316,7 +3316,7 @@ class ElfParser:
 				break
 
 		# check if jump relocation entry was found
-		if foundEntry == None:
+		if foundEntry is None:
 			raise ValueError('Jump relocation entry with the name "%s"' \
 				+ ' was not found.' % name)
 
