@@ -1065,7 +1065,7 @@ class ElfParser:
 				+ i*self.header.e_phentsize + 25])*0x100 \
 				+ ord(buffer_list[self.header.e_phoff \
 				+ i*self.header.e_phentsize + 24])
-	
+
 			'''
 			uint32_t   p_align;
 
@@ -1400,7 +1400,7 @@ class ElfParser:
 					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 2]) \
 					<< 16) \
 					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 1]) \
-					<< 8)+ ord(self.data[jmpRelOffset + (i*relEntrySize)])
+					<< 8) + ord(self.data[jmpRelOffset + (i*relEntrySize)])
 
 				'''
 				Elf32_Word    r_info;
@@ -1582,7 +1582,7 @@ class ElfParser:
 					% SH_type.reverse_lookup[section.elfN_shdr.sh_type]
 			else:
 				print "Unknown Type: 0x%x (%d)" \
-					% (section.elfN_shdr.sh_type,section.elfN_shdr.sh_type)
+					% (section.elfN_shdr.sh_type, section.elfN_shdr.sh_type)
 
 			print "Addr: 0x%x" % section.elfN_shdr.sh_addr
 			print "Off: 0x%x" % section.elfN_shdr.sh_offset
@@ -1624,9 +1624,9 @@ class ElfParser:
 			print "Virtual Addr: 0x%x" % segment.elfN_Phdr.p_vaddr
 			print "Physical Addr: 0x%x" % segment.elfN_Phdr.p_paddr
 			print "File Size: 0x%x (%d)" \
-				% (segment.elfN_Phdr.p_filesz,segment.elfN_Phdr.p_filesz)
+				% (segment.elfN_Phdr.p_filesz, segment.elfN_Phdr.p_filesz)
 			print "Mem Size: 0x%x (%d)" \
-				% (segment.elfN_Phdr.p_memsz,segment.elfN_Phdr.p_memsz)
+				% (segment.elfN_Phdr.p_memsz, segment.elfN_Phdr.p_memsz)
 
 			# translate flags
 			temp = ""
@@ -1882,7 +1882,7 @@ class ElfParser:
 
 			print
 			counter += 1			
-	
+
 
 	# this function generates a new ELF file from the attributes of the object
 	# return values: (list) generated ELF file data
@@ -1918,7 +1918,7 @@ class ElfParser:
 				else:
 					newfile.append(temp[i])	
 
-				writePosition +=1
+				writePosition += 1
 
 		# ------
 
@@ -1944,7 +1944,7 @@ class ElfParser:
 						newfile[writePosition] = section.sectionName[i]
 					else:
 						newfile.append(section.sectionName[i])			
-					writePosition +=1
+					writePosition += 1
 
 				# append null byte (all written strings are null-terminated)
 				if writePosition < len(newfile):
@@ -2153,7 +2153,7 @@ class ElfParser:
 				= (chr((self.segments[i].elfN_Phdr.p_flags >> 16) & 0xff))
 			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 27] \
 				= (chr((self.segments[i].elfN_Phdr.p_flags >> 24) & 0xff))
-	
+
 			'''
 			uint32_t   p_align;
 			'''
@@ -2813,8 +2813,8 @@ class ElfParser:
 			# generateNewSection(sectionName, sh_name, sh_type, 
 			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
 			# sh_info, sh_addralign, sh_entsize)			
-			newNullSection = self.generateNewSection("", 0, SH_type.SHT_NULL, 0
-				, 0, 0, 0, 0, 0, 0, 0)
+			newNullSection = self.generateNewSection("", 0, SH_type.SHT_NULL, 0,
+				0, 0, 0, 0, 0, 0, 0)
 			self.sections.append(newNullSection)
 
 			# increase count of sections
@@ -3238,7 +3238,7 @@ class ElfParser:
 		return ((ord(self.data[entryOffset + 3]) \
 			<< 24) \
 			+ (ord(self.data[entryOffset + 2]) \
-			<< 16 ) \
+			<< 16) \
 			+ (ord(self.data[entryOffset + 1]) \
 			<< 8) \
 			+ ord(self.data[entryOffset]))

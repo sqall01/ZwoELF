@@ -15,7 +15,7 @@ x86File = "ls"
 
 print "Manipulating: %s" % x86File
 test = ElfParser(x86File)
-	
+
 freeSpace = test.getFreeSpaceAfterSegment(test.segments[2])
 print "Free space: %d Bytes " % freeSpace
 
@@ -41,7 +41,7 @@ print "Virtual memory addr of new data: 0x%x" % newDataMemoryAddr
 
 # jump from newDataMemoryAddr to originalEntry
 # 0 - (newDataMemoryAddr - originalEntry) - 5
-jumpTarget = c_uint(0 - (newDataMemoryAddr - originalEntry) - 5 ).value
+jumpTarget = c_uint(0 - (newDataMemoryAddr - originalEntry) - 5).value
 
 # jump from new code to old entry point
 testData = list()

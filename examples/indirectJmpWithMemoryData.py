@@ -80,7 +80,7 @@ for i in range(len(entryPointData)):
 # entrypoint + copiedBytesFromEntry
 # formula: 0 - (sourceAddress  - targetAddress) - 5
 jumpTarget = c_uint(0 - ((newDataMemoryAddr + len(testData)) 
-	- ((originalEntry + copiedBytesFromEntry))) - 5 ).value
+	- ((originalEntry + copiedBytesFromEntry))) - 5).value
 testData.append("\xE9") # JMP rel32
 testData.append(chr((jumpTarget & 0xff)))
 testData.append((chr((jumpTarget >> 8) & 0xff)))

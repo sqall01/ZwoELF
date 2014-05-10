@@ -73,7 +73,7 @@ for section in tempList:
 		or section.sectionName == ".got.plt"
 		or section.sectionName == ".data"
 		or section.sectionName == ".shstrtab"):
-		
+
 		# add section to list of sections in which new sections can 
 		# be set without causing any errors
 		allowedSections.append(section)
