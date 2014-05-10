@@ -4,7 +4,7 @@
 # twitter: https://twitter.com/sqall01
 # blog: http://blog.h4des.org
 # github: https://github.com/sqall01
-# 
+#
 # Licensed under the GNU Public License, version 2.
 
 
@@ -36,10 +36,10 @@ class ElfN_Ehdr:
 
 	class EI_OSABI:
 		'''
-		This  byte  identifies  the operating system and ABI to which the 
-		object is targeted.  Some fields in other ELF structures have flags 
-		and values that have platform-specific  meanings;  the  
-		interpretation  of  those fields is determined by the value of this 
+		This  byte  identifies  the operating system and ABI to which the
+		object is targeted.  Some fields in other ELF structures have flags
+		and values that have platform-specific  meanings;  the
+		interpretation  of  those fields is determined by the value of this
 		byte.  E.g.:
 
 		ELFOSABI_NONE 		Same as ELFOSABI_SYSV (0x00)
@@ -79,7 +79,7 @@ class ElfN_Ehdr:
 		ELFDATA2LSB 	Two's complement, little-endian. (0x01)
 		ELFDATA2MSB 	Two's complement, big-endian. (0x02)
 		'''
-		reverse_lookup = {0x0: "ELFDATANONE", 0x1: "ELFDATA2LSB", 
+		reverse_lookup = {0x0: "ELFDATANONE", 0x1: "ELFDATA2LSB",
 			0x2: "ELFDATA2MSB"}
 		ELFDATANONE = 0x0
 		ELFDATA2LSB = 0x1
@@ -129,11 +129,11 @@ class ElfN_Ehdr:
 		EM_X86_64 		AMD x86-64 (0x3E)
 		EM_VAX 			DEC Vax. (0x4B)
 		'''
-		reverse_lookup = {0x0: "EM_NONE", 0x1: "EM_M32", 0x2: "EM_SPARC", 
-			0x3: "EM_386", 0x4: "EM_68K", 0x5: "EM_88K", 0x7: "EM_860", 
-			0x8: "EM_MIPS", 0xF: "EM_PARISC", 0x12: "EM_SPARC32PLUS", 
-			0x14: "EM_PPC", 0x15: "EM_PPC64", 0x16: "EM_S390", 
-			0x28: "EM_ARM", 0x2A: "EM_SH", 0x2B: "EM_SPARCV9", 
+		reverse_lookup = {0x0: "EM_NONE", 0x1: "EM_M32", 0x2: "EM_SPARC",
+			0x3: "EM_386", 0x4: "EM_68K", 0x5: "EM_88K", 0x7: "EM_860",
+			0x8: "EM_MIPS", 0xF: "EM_PARISC", 0x12: "EM_SPARC32PLUS",
+			0x14: "EM_PPC", 0x15: "EM_PPC64", 0x16: "EM_S390",
+			0x28: "EM_ARM", 0x2A: "EM_SH", 0x2B: "EM_SPARCV9",
 			0x32: "EM_IA_64", 0x3E: "EM_X86_64", 0x4B: "EM_VAX"}
 		EM_NONE = 0x0
 		EM_M32 = 0x1
@@ -168,7 +168,7 @@ class ElfN_Ehdr:
 		ET_DYN		A shared object. (0x3)
 		ET_CORE		A core file. (0x4)
 		'''
-		reverse_lookup = {0x0: "T_NONE", 0x1: "ET_REL", 0x2: "ET_EXEC", 
+		reverse_lookup = {0x0: "T_NONE", 0x1: "ET_REL", 0x2: "ET_EXEC",
 			0x3: "ET_DYN", 0x4: "ET_CORE"}
 		ET_NONE = 0x0
 		ET_REL = 0x1
@@ -234,16 +234,16 @@ class Shstrndx:
 
 	SHN_ABS (0xfff1)       This value specifies absolute values for the
 		corresponding reference.  For example, symbols defined relative
-		to section number SHN_ABS have absolute values and are not 
+		to section number SHN_ABS have absolute values and are not
 		affected by relocation.
 
-	SHN_COMMON (0xfff2)    Symbols  defined  relative  to  this  section 
+	SHN_COMMON (0xfff2)    Symbols  defined  relative  to  this  section
 		are common symbols, such as Fortran COMMON or unallocated C
 		external variables.
 
 	SHN_HIRESERVE (0xffff) This value specifies the upper bound of the range
 		of reserved indices between SHN_LORESERVE and SHN_HIRESERVE,
-		inclusive; the values do not reference the section header table.  
+		inclusive; the values do not reference the section header table.
 		That is, the section header table does not contain entries for the
 		reserved indices.
 	'''
@@ -289,7 +289,7 @@ class SH_flags:
 	SHF_WRITE (0x1)      This section contains data that should be writable
 		during process execution.
 
-	SHF_ALLOC (0x2)      This  section occupies memory during process 
+	SHF_ALLOC (0x2)      This  section occupies memory during process
 		execution.  Some control sections do not reside in the memory
 		image of an object file.  This attribute is off for those sections.
 
@@ -307,7 +307,7 @@ class SH_flags:
 # section headers sh_type values
 class SH_type:
 	'''
-	SHT_NULL (0)      This  value  marks the section header as inactive.  
+	SHT_NULL (0)      This  value  marks the section header as inactive.
 		It does not have an associated section.  Other members
 		of the section header have undefined values.
 
@@ -315,13 +315,13 @@ class SH_type:
 		whose format and meaning are determined  solely  by
 		the program.
 
-	SHT_SYMTAB (2)   This section holds a symbol table.  Typically, 
+	SHT_SYMTAB (2)   This section holds a symbol table.  Typically,
 		SHT_SYMTAB provides symbols for link editing, though it may
-		also be used for dynamic linking.  As a complete symbol table, 
+		also be used for dynamic linking.  As a complete symbol table,
 		it may contain many symbols unnecessary for
 		dynamic linking.  An object file can also contain a SHT_DYNSYM section.
 
-	SHT_STRTAB (3)     This section holds a string table.  
+	SHT_STRTAB (3)     This section holds a string table.
 		An object file may have multiple string table sections.
 
 	SHT_RELA (4)     This  section holds relocation entries with explicit
@@ -332,20 +332,20 @@ class SH_type:
 		participating in dynamic linking must contain a  symbol
 		hash table.  An object file may have only one hash table.
 
-	SHT_DYNAMIC (6)   This section holds information for dynamic linking.  
+	SHT_DYNAMIC (6)   This section holds information for dynamic linking.
 		An object file may have only one dynamic section.
 
-	SHT_NOTE (7)      This section holds information that marks the file 
+	SHT_NOTE (7)      This section holds information that marks the file
 		in some way.
 
 	SHT_NOBITS (8)    A  section of this type occupies no space in the file
 		but otherwise resembles SHT_PROGBITS.  Although this
-		section contains no bytes, the sh_offset member contains 
+		section contains no bytes, the sh_offset member contains
 		the conceptual file offset.
 
 	SHT_REL (9)       This section holds relocation offsets without explicit
 		addends, such as  type  Elf32_Rel  for  the  32-bit
-		class of object files.  An object file may have multiple 
+		class of object files.  An object file may have multiple
 		relocation sections.
 
 	SHT_SHLIB (10)     This section is reserved but has unspecified semantics.
@@ -367,12 +367,12 @@ class SH_type:
 		types  between  SHT_LOUSER and SHT_HIUSER may be used by the
 		application, without conflicting with current
 	'''
-	reverse_lookup = {0x0: "SHT_NULL", 0x1: "SHT_PROGBITS", 
-		0x2: "SHT_SYMTAB", 0x3: "SHT_STRTAB", 0x4: "SHT_RELA", 
-		0x5: "SHT_HASH", 0x6: "SHT_DYNAMIC", 0x7: "SHT_NOTE", 
-		0x8: "SHT_NOBITS", 0x9: "SHT_REL", 0xA: "SHT_SHLIB", 
-		0xB: "SHT_DYNSYM", 0x70000000: "SHT_LOPROC", 
-		0x7fffffff: "SHT_HIPROC", 0x80000000: "SHT_LOUSER", 
+	reverse_lookup = {0x0: "SHT_NULL", 0x1: "SHT_PROGBITS",
+		0x2: "SHT_SYMTAB", 0x3: "SHT_STRTAB", 0x4: "SHT_RELA",
+		0x5: "SHT_HASH", 0x6: "SHT_DYNAMIC", 0x7: "SHT_NOTE",
+		0x8: "SHT_NOBITS", 0x9: "SHT_REL", 0xA: "SHT_SHLIB",
+		0xB: "SHT_DYNSYM", 0x70000000: "SHT_LOPROC",
+		0x7fffffff: "SHT_HIPROC", 0x80000000: "SHT_LOUSER",
 		0xffffffff: "SHT_HIUSER"}
 	SHT_NULL = 0x0
 	SHT_PROGBITS = 0x1
@@ -423,53 +423,53 @@ class P_type:
 		are undefined.  This lets the program header have
 		ignored entries.
 
-	PT_LOAD (1)     The array element specifies a loadable segment, 
+	PT_LOAD (1)     The array element specifies a loadable segment,
 		described by p_filesz and p_memsz.  The bytes from the file
-		are mapped to the beginning of the memory segment.  
+		are mapped to the beginning of the memory segment.
 		If the segment's memory size p_memsz is larger than the
-		file  size p_filesz, the "extra" bytes are defined to hold the 
-		value 0 and to follow the segment's initialized area.  
-		The file size may not be larger than the memory size.  
+		file  size p_filesz, the "extra" bytes are defined to hold the
+		value 0 and to follow the segment's initialized area.
+		The file size may not be larger than the memory size.
 		Loadable segment entries in the  program
 		header table appear in ascending order, sorted on the p_vaddr member.
 
 	PT_DYNAMIC (2)  The array element specifies dynamic linking information.
 
-	PT_INTERP (3)   The  array  element  specifies  the  location and size 
-		of a null-terminated pathname to invoke as an interpreter.  
-		This segment type is meaningful only  for  executable  files  
+	PT_INTERP (3)   The  array  element  specifies  the  location and size
+		of a null-terminated pathname to invoke as an interpreter.
+		This segment type is meaningful only  for  executable  files
 		(though  it  may  occur  for  shared
-		objects).   However it may not occur more than once in a file.  
+		objects).   However it may not occur more than once in a file.
 		If it is present, it must precede any loadable segment entry.
 
-	PT_NOTE (4)     The array element specifies the location and size 
+	PT_NOTE (4)     The array element specifies the location and size
 		for auxiliary information.
 
-	PT_SHLIB (5)    This segment type is reserved but has unspecified 
+	PT_SHLIB (5)    This segment type is reserved but has unspecified
 		semantics.  Programs that contain  an  array  element  of
 		this type do not conform to the ABI.
 
-	PT_PHDR (6)     The  array element, if present, specifies the location 
+	PT_PHDR (6)     The  array element, if present, specifies the location
 		and size of the program header table itself, both in
-		the file and in the memory image of the program.  This segment 
+		the file and in the memory image of the program.  This segment
 		type may not occur more than once in a file.
-		Moreover,  it may only occur if the program header table is 
+		Moreover,  it may only occur if the program header table is
 		part of the memory image of the program.  If it
 		is present, it must precede any loadable segment entry.
 
-	PT_LOPROC (0x70000000)   Values greater than or equal to PT_HIPROC 
+	PT_LOPROC (0x70000000)   Values greater than or equal to PT_HIPROC
 		are reserved for processor-specific semantics.
 
-	PT_HIPROC (0x7fffffff)  Values less than or equal to PT_LOPROC 
+	PT_HIPROC (0x7fffffff)  Values less than or equal to PT_LOPROC
 		are reserved for processor-specific semantics.
 
-	PT_GNU_STACK GNU extension which is used by the Linux kernel to 
+	PT_GNU_STACK GNU extension which is used by the Linux kernel to
 		control the state of the stack via the flags set in  the
 		p_flags member.
 	'''
-	reverse_lookup = {0x0: "PT_NULL", 0x1: "PT_LOAD", 0x2: "PT_DYNAMIC", 
-		0x3: "PT_INTERP", 0x4: "PT_NOTE", 0x5: "PT_SHLIB", 
-		0x6: "PT_PHDR", 0x70000000: "PT_LOPROC", 
+	reverse_lookup = {0x0: "PT_NULL", 0x1: "PT_LOAD", 0x2: "PT_DYNAMIC",
+		0x3: "PT_INTERP", 0x4: "PT_NOTE", 0x5: "PT_SHLIB",
+		0x6: "PT_PHDR", 0x70000000: "PT_LOPROC",
 		0x7fffffff: "PT_HIPROC", 0x6474E550: "PT_GNU_EH_FRAME"}
 	PT_NULL = 0x0
 	PT_LOAD = 0x1
@@ -550,15 +550,15 @@ class D_tag:
 
 	DT_HIPROC   End of processor-specific semantics
 	'''
-	reverse_lookup = {0: "DT_NULL", 1: "DT_NEEDED", 2: "DT_PLTRELSZ", 
-		3: "DT_PLTGOT", 4: "DT_HASH", 5: "DT_STRTAB", 6: "DT_SYMTAB", 
-		7: "DT_RELA", 8: "DT_RELASZ", 9: "DT_RELAENT", 10: "DT_STRSZ", 
-		11: "DT_SYMENT", 12: "DT_INIT", 13: "DT_FINI", 14: "DT_SONAME", 
-		15: "DT_RPATH", 16: "DT_SYMBOLIC", 17: "DT_REL", 18: "DT_RELSZ", 
-		19: "DT_RELENT", 20: "DT_PLTREL", 21: "DT_DEBUG", 22: "DT_TEXTREL", 
-		23: "DT_JMPREL", 0x70000000: "DT_LOPROC", 
-		0x7fffffff: "DT_HIPROC", 0x6ffffef5: "DT_GNU_HASH", 
-		0x6ffffffe: "DT_VERNEED", 0x6fffffff: "DT_VERNEEDNUM", 
+	reverse_lookup = {0: "DT_NULL", 1: "DT_NEEDED", 2: "DT_PLTRELSZ",
+		3: "DT_PLTGOT", 4: "DT_HASH", 5: "DT_STRTAB", 6: "DT_SYMTAB",
+		7: "DT_RELA", 8: "DT_RELASZ", 9: "DT_RELAENT", 10: "DT_STRSZ",
+		11: "DT_SYMENT", 12: "DT_INIT", 13: "DT_FINI", 14: "DT_SONAME",
+		15: "DT_RPATH", 16: "DT_SYMBOLIC", 17: "DT_REL", 18: "DT_RELSZ",
+		19: "DT_RELENT", 20: "DT_PLTREL", 21: "DT_DEBUG", 22: "DT_TEXTREL",
+		23: "DT_JMPREL", 0x70000000: "DT_LOPROC",
+		0x7fffffff: "DT_HIPROC", 0x6ffffef5: "DT_GNU_HASH",
+		0x6ffffffe: "DT_VERNEED", 0x6fffffff: "DT_VERNEEDNUM",
 		0x6ffffff0: "DT_VERSYM"}
 	DT_NULL = 0
 	DT_NEEDED = 1
@@ -639,7 +639,7 @@ class ElfN_Rel:
 		self.r_offset = None
 
 		# for 32 bit systems:
-		# r_info = (r_sym << 8) + (r_type & 0xFF)		
+		# r_info = (r_sym << 8) + (r_type & 0xFF)
 		self.r_info = None
 
 		# for 32 bit systems calculated: "(unsigned char)(r_info)" or just "r_info & 0xFF"
@@ -670,7 +670,7 @@ class ElfN_Sym:
 		Elf64_Half 		st_shndx;	/* Associated section index */
 		Elf64_Addr 		st_value;	/* Value of the symbol */
 		Elf64_Xword 	st_size;	/* Associated symbol size */
-	} Elf64_Sym;	
+	} Elf64_Sym;
 	'''
 	def __init__(self):
 		st_name = None
@@ -683,59 +683,59 @@ class ElfN_Sym:
 
 class R_type:
 	'''
-	R_386_GOT32 	This relocation type computes the distance from the 
+	R_386_GOT32 	This relocation type computes the distance from the
 		base of the global offset
-		table to the symbol's global offset table entry. 
+		table to the symbol's global offset table entry.
 		It additionally instructs the link
 		editor to build a global offset table.
 
-	R_386_PLT32 	This relocation type computes the address of the 
+	R_386_PLT32 	This relocation type computes the address of the
 		symbol's procedure linkage
-		table entry and additionally instructs the link editor to 
+		table entry and additionally instructs the link editor to
 		build a procedure linkage table.
 
-	R_386_COPY 		The link editor creates this relocation type for 
+	R_386_COPY 		The link editor creates this relocation type for
 		dynamic linking. Its offset
-		member refers to a location in a writable segment. 
-		The symbol table index specifies a symbol that should exist 
+		member refers to a location in a writable segment.
+		The symbol table index specifies a symbol that should exist
 		both in the current object file and in a shared
-		object. During execution, the dynamic linker copies data 
-		associated with the shared object's symbol to the location 
+		object. During execution, the dynamic linker copies data
+		associated with the shared object's symbol to the location
 		specified by the offset.
 
-	R_386_GLOB_DAT 	This relocation type is used to set a global offset 
-		table entry to the address of the specified symbol. The 
+	R_386_GLOB_DAT 	This relocation type is used to set a global offset
+		table entry to the address of the specified symbol. The
 		special relocation type allows one to determine the
 		correspondence between symbols and global offset table entries.
 
-	R_3862_JMP_SLOT The link editor creates this relocation type for 
-		dynamic linking. Its offset member gives the location of a 
-		procedure linkage table entry. The dynamic linker modifies 
-		the procedure linkage table entry to transfer control to the 
+	R_3862_JMP_SLOT The link editor creates this relocation type for
+		dynamic linking. Its offset member gives the location of a
+		procedure linkage table entry. The dynamic linker modifies
+		the procedure linkage table entry to transfer control to the
 		designated symbol's address.
 
-	R_386_RELATIVE 	The link editor creates this relocation type for 
-		dynamic linking. Its offset member gives a location within a 
-		shared object that contains a value representing a relative address. 
+	R_386_RELATIVE 	The link editor creates this relocation type for
+		dynamic linking. Its offset member gives a location within a
+		shared object that contains a value representing a relative address.
 		The dynamic linker computes the corresponding virtual
-		address by adding the virtual address at which the shared object 
-		was loaded to the relative address. Relocation entries for this 
+		address by adding the virtual address at which the shared object
+		was loaded to the relative address. Relocation entries for this
 		type must specify 0 for the symbol table index.
 
 	R_386_GOTOFF 	This relocation type computes the difference between a
 		symbol's value and the address of the global offset table. It
-		additionally instructs the link editor to build the global 
+		additionally instructs the link editor to build the global
 		offset table.
 
 	R_386_GOTPC 	This relocation type resembles R_386_PC32, except it uses
-		the address of the global offset table in its calculation. 
+		the address of the global offset table in its calculation.
 		The symbol referenced in this relocation
-		normally is _GLOBAL_OFFSET_TABLE_, which additionally instructs 
+		normally is _GLOBAL_OFFSET_TABLE_, which additionally instructs
 		the link editor to build the global offset table.
 	'''
-	reverse_lookup = {0: "R_386_NONE", 1: "R_386_32", 2: "R_386_PC32", 
-		3: "R_386_GOT32", 4: "R_386_PLT32", 5: "R_386_COPY", 
-		6: "R_386_GLOB_DAT", 7: "R_386_JMP_SLOT", 8: "R_386_RELATIVE", 
+	reverse_lookup = {0: "R_386_NONE", 1: "R_386_32", 2: "R_386_PC32",
+		3: "R_386_GOT32", 4: "R_386_PLT32", 5: "R_386_COPY",
+		6: "R_386_GLOB_DAT", 7: "R_386_JMP_SLOT", 8: "R_386_RELATIVE",
 		9: "R_386_GOTOFF", 10: "R_386_GOTPC"}
 	R_386_NONE = 0
 	R_386_32 = 1

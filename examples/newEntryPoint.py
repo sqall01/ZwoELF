@@ -4,7 +4,7 @@
 # twitter: https://twitter.com/sqall01
 # blog: http://blog.h4des.org
 # github: https://github.com/sqall01
-# 
+#
 # Licensed under the GNU Public License, version 2.
 
 from ctypes import c_uint
@@ -28,10 +28,10 @@ for i in range(freeSpace-1):
 	#dummyData.append("\x00")
 	dummyData.append("\x41")
 
-#manipulatedSegment, newDataOffset, newDataMemoryAddr 
-# = test.appendDataToExecutableSegment(dummyData, 
+#manipulatedSegment, newDataOffset, newDataMemoryAddr
+# = test.appendDataToExecutableSegment(dummyData,
 # addNewSection=True, newSectionName=".blahblub")
-# manipulatedSegment, newDataOffset, newDataMemoryAddr 
+# manipulatedSegment, newDataOffset, newDataMemoryAddr
 # = test.appendDataToExecutableSegment(dummyData, extendExistingSection=True)
 manipulatedSegment, newDataOffset, newDataMemoryAddr \
 	= test.appendDataToExecutableSegment(dummyData)

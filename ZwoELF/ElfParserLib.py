@@ -4,7 +4,7 @@
 # twitter: https://twitter.com/sqall01
 # blog: http://blog.h4des.org
 # github: https://github.com/sqall01
-# 
+#
 # Licensed under the GNU Public License, version 2.
 
 import binascii
@@ -17,7 +17,7 @@ from Elf import ElfN_Ehdr, Shstrndx, Elf32_Shdr, SH_flags, SH_type, \
 
 class ElfParser:
 
-	def __init__(self, filename, force=False, startOffset=0, 
+	def __init__(self, filename, force=False, startOffset=0,
 		forceDynSymParsing=0, onlyParseHeader=False):
 		self.forceDynSymParsing = forceDynSymParsing
 		self.header = None
@@ -198,7 +198,7 @@ class ElfParser:
 	# this function generates a new section
 	# return values: (Section) new generated section
 	def generateNewSection(self, sectionName, sh_name, sh_type, sh_flags,
-		sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign, 
+		sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign,
 		sh_entsize):
 		newsection = Section()
 
@@ -332,9 +332,9 @@ class ElfParser:
 		# extract name from the string table
 		temp = ""
 		for i in range(
-			(stringTableOffset + stringTableSize 
+			(stringTableOffset + stringTableSize
 			- tempSymbol.ElfN_Sym.st_name)):
-			if (self.data[stringTableOffset 
+			if (self.data[stringTableOffset
 				+ tempSymbol.ElfN_Sym.st_name + i] == "\x00"):
 				break
 			temp += self.data[stringTableOffset \
@@ -444,7 +444,7 @@ class ElfParser:
 		'''
 		ElfN_Off      e_shoff;
 
-		This member holds the section header table's file offset in bytes 
+		This member holds the section header table's file offset in bytes
 		(from the beginning of the file).  If the file has no section header
 		table this member holds zero.
 		'''
@@ -478,7 +478,7 @@ class ElfParser:
 		'''
 		uint16_t      e_phentsize;
 
-		This member holds the size in bytes of one entry in the file's 
+		This member holds the size in bytes of one entry in the file's
 		program header table; all entries are the same size.
 		'''
 		self.header.e_phentsize = ord(buffer_list[43])*0x100 \
@@ -489,19 +489,19 @@ class ElfParser:
 		uint16_t      e_phnum;
 
 		This member holds the number of entries in the program header table.
-		Thus the product of e_phentsize and e_phnum gives the table's size 
-		in bytes. If a file has no program header, 
+		Thus the product of e_phentsize and e_phnum gives the table's size
+		in bytes. If a file has no program header,
 		e_phnum holds the value zero.
 
-		If  the  number  of  entries in the program header table is 
+		If  the  number  of  entries in the program header table is
 		larger than or equal to PN_XNUM (0xffff), this member holds
-		PN_XNUM (0xffff) and the real number of entries in the program 
+		PN_XNUM (0xffff) and the real number of entries in the program
 		header table is held in the sh_info member of  the  initial
-		entry in section header table.  Otherwise, the sh_info member of 
+		entry in section header table.  Otherwise, the sh_info member of
 		the initial entry contains the value zero.
 
 		PN_XNUM  This  is defined as 0xffff, the largest number e_phnum can
-		have, specifying where the actual number of program headers 
+		have, specifying where the actual number of program headers
 		is assigned.
 		'''
 		self.header.e_phnum = ord(buffer_list[45])*0x100 + ord(buffer_list[44])
@@ -510,7 +510,7 @@ class ElfParser:
 		'''
 		uint16_t      e_shentsize;
 
-		This member holds a sections header's size in bytes.  A section 
+		This member holds a sections header's size in bytes.  A section
 		header is one entry in the section  header  table;  all
 		entries are the same size.
 		'''
@@ -522,15 +522,15 @@ class ElfParser:
 		uint16_t      e_shnum;
 
 		This member holds the number of entries in the section header table.
-		Thus the product of e_shentsize and e_shnum gives the section 
+		Thus the product of e_shentsize and e_shnum gives the section
 		header table's size in bytes.  If a file has no section header table,
 		e_shnum holds the value of zero.
 
 		If the number of entries in the section header table is larger than or
 		equal to SHN_LORESERVE (0xff00),  e_shnum  holds
-		the  value zero and the real number of entries in the section 
-		header table is held in the sh_size member of the initial		
-		entry in section header table.  Otherwise, the sh_size member of 
+		the  value zero and the real number of entries in the section
+		header table is held in the sh_size member of the initial
+		entry in section header table.  Otherwise, the sh_size member of
 		the initial entry in the section  header  table  holds
 		the value zero.
 		'''
@@ -540,17 +540,17 @@ class ElfParser:
 		'''
 		uint16_t      e_shstrndx;
 
-		This  member  holds  the section header table index of the entry 
+		This  member  holds  the section header table index of the entry
 		associated with the section name string table.  If the
-		file has no section name string table, this member holds 
+		file has no section name string table, this member holds
 		the value SHN_UNDEF.
 
-		If the index of section name string table section is larger than 
+		If the index of section name string table section is larger than
 		or equal to SHN_LORESERVE (0xff00), this member  holds
-		SHN_XINDEX  (0xffff)  and  the real index of the section name 
+		SHN_XINDEX  (0xffff)  and  the real index of the section name
 		string table section is held in the sh_link member of the
-		initial entry in section header table.  Otherwise, the sh_link 
-		member of the initial entry in section header table contains 
+		initial entry in section header table.  Otherwise, the sh_link
+		member of the initial entry in section header table contains
 		the value zero.
 		'''
 		self.header.e_shstrndx = ord(buffer_list[51])*0x100 \
@@ -561,18 +561,18 @@ class ElfParser:
 		# check if ELF is supported
 
 		'''
-		EI_MAG0     The first byte of the magic number. It must be 
+		EI_MAG0     The first byte of the magic number. It must be
 			filled with ELFMAG0. (0x7f)
-		EI_MAG1     The second byte of the magic number. It must be 
+		EI_MAG1     The second byte of the magic number. It must be
 			filled with ELFMAG1. ('E')
-		EI_MAG2     The third byte of the magic number. It must be 
+		EI_MAG2     The third byte of the magic number. It must be
 			filled with ELFMAG2. ('L')
-		EI_MAG3     The fourth byte of the magic number. It must be 
+		EI_MAG3     The fourth byte of the magic number. It must be
 			filled with ELFMAG3. ('F')
 		'''
-		if not (self.header.e_ident[0] == chr(0x7f) 
-			and self.header.e_ident[1] == 'E' 
-			and self.header.e_ident[2] == 'L' 
+		if not (self.header.e_ident[0] == chr(0x7f)
+			and self.header.e_ident[1] == 'E'
+			and self.header.e_ident[2] == 'L'
 			and self.header.e_ident[3] == 'F'):
 			raise NotImplementedError("First 4 bytes do not have magic value")
 
@@ -589,7 +589,7 @@ class ElfParser:
 
 
 		'''
-		The sixth byte specifies the data encoding of the 
+		The sixth byte specifies the data encoding of the
 		processor-specific data in the file.
 		'''
 		if ord(self.header.e_ident[5]) == ElfN_Ehdr.EI_DATA.ELFDATANONE:
@@ -612,7 +612,7 @@ class ElfParser:
 		'''
 		This  byte  identifies  the operating system and ABI to which the
 		object is targeted.  Some fields in other ELF structures have flags
-		and values that have platform-specific  meanings;  the 
+		and values that have platform-specific  meanings;  the
 		interpretation  of  those fields is determined by the value of
 		this byte.
 		'''
@@ -764,9 +764,9 @@ class ElfParser:
 			'''
 			Elf32_Off  sh_offset;
 
-			This  member's  value holds the byte offset from the beginning 
+			This  member's  value holds the byte offset from the beginning
 			of the file to the first byte in the section.  One section
-			type, SHT_NOBITS, occupies no space in the file, and its 
+			type, SHT_NOBITS, occupies no space in the file, and its
 			sh_offset member locates the conceptual placement in the file.
 			'''
 			# for 32 bit systems only
@@ -800,7 +800,7 @@ class ElfParser:
 			'''
 			uint32_t   sh_link;
 
-			This member holds a section header table index link, whose 
+			This member holds a section header table index link, whose
 			interpretation depends on the section type.
 			'''
 			tempSectionEntry.sh_link = ord(buffer_list[self.header.e_shoff \
@@ -815,7 +815,7 @@ class ElfParser:
 			'''
 			uint32_t   sh_info;
 
-			This member holds extra information, whose interpretation 
+			This member holds extra information, whose interpretation
 			depends on the section type.
 			'''
 			tempSectionEntry.sh_info = ord(buffer_list[self.header.e_shoff \
@@ -830,11 +830,11 @@ class ElfParser:
 			'''
 			uint32_t   sh_addralign;
 
-			Some  sections  have  address  alignment constraints.  If a 
+			Some  sections  have  address  alignment constraints.  If a
 			section holds a doubleword, the system must ensure doubleword
 			alignment for the entire section.  That is, the value of  sh_addr
 			must  be  congruent  to  zero,  modulo  the  value  of
-			sh_addralign.   Only zero and positive integral powers of two 
+			sh_addralign.   Only zero and positive integral powers of two
 			are allowed.  Values of zero or one mean the section has no
 			alignment constraints.
 			'''
@@ -852,9 +852,9 @@ class ElfParser:
 			'''
 			uint32_t   sh_entsize;
 
-			Some sections hold a table of fixed-sized entries, such as a 
+			Some sections hold a table of fixed-sized entries, such as a
 			symbol table.  For such a section,  this  member  gives  the
-			size in bytes for each entry.  This member contains zero if 
+			size in bytes for each entry.  This member contains zero if
 			the section does not hold a table of fixed-size entries.
 			'''
 			# for 32 bit systems only
@@ -879,7 +879,7 @@ class ElfParser:
 		# section string table first byte always 0 byte
 		# section string table last byte always 0 byte
 		# section string table holds null terminated strings
-		# empty section string table => sh_size of string table section = 0 
+		# empty section string table => sh_size of string table section = 0
 		# => Non-zero indexes to string table are invalid
 
 		# check if sections exists => read whole string table
@@ -899,7 +899,7 @@ class ElfParser:
 
 				tempName = ""
 				counter = self.sections[i].elfN_shdr.sh_name
-				while (ord(stringtable_str[counter]) != 0 
+				while (ord(stringtable_str[counter]) != 0
 					and counter < len(stringtable_str)):
 					tempName += stringtable_str[counter]
 					counter += 1
@@ -943,7 +943,7 @@ class ElfParser:
 			'''
 			uint32_t   p_type;
 
-			This  member  of  the Phdr struct tells what kind of segment 
+			This  member  of  the Phdr struct tells what kind of segment
 			this array element describes or how to interpret the array
 			element's information.
 			'''
@@ -960,7 +960,7 @@ class ElfParser:
 			'''
 			Elf32_Off  p_offset;
 
-			This member holds the offset from the beginning of the 
+			This member holds the offset from the beginning of the
 			file at which the first byte of the segment resides.
 			'''
 			# for 32 bit systems only
@@ -977,7 +977,7 @@ class ElfParser:
 			'''
 			Elf32_Addr p_vaddr;
 
-			This member holds the virtual address at which the first 
+			This member holds the virtual address at which the first
 			byte of the segment resides in memory.
 			'''
 			# for 32 bit systems only
@@ -1012,7 +1012,7 @@ class ElfParser:
 			'''
 			uint32_t   p_filesz;
 
-			This member holds the number of bytes in the file image of 
+			This member holds the number of bytes in the file image of
 			the segment.  It may be zero.
 			'''
 			# for 32 bit systems only
@@ -1029,7 +1029,7 @@ class ElfParser:
 			'''
 			uint32_t   p_memsz;
 
-			This member holds the number of bytes in the memory image 
+			This member holds the number of bytes in the memory image
 			of the segment.  It may be zero.
 			'''
 			# for 32 bit systems only
@@ -1052,7 +1052,7 @@ class ElfParser:
 			PF_W   A writable segment.
 			PF_R   A readable segment.
 
-			A text segment commonly has the flags PF_X and PF_R.  
+			A text segment commonly has the flags PF_X and PF_R.
 			A data segment commonly has PF_X, PF_W and PF_R.
 			'''
 			# for 32 bit systems only
@@ -1069,11 +1069,11 @@ class ElfParser:
 			'''
 			uint32_t   p_align;
 
-			This member holds the value to which the segments are aligned 
+			This member holds the value to which the segments are aligned
 			in memory and in the  file.   Loadable  process  segments
-			must have congruent values for p_vaddr and p_offset, modulo 
+			must have congruent values for p_vaddr and p_offset, modulo
 			the page size.  Values of zero and one mean no alignment is
-			required.  Otherwise, p_align should be a positive, integral 
+			required.  Otherwise, p_align should be a positive, integral
 			power of two, and p_vaddr should  equal  p_offset,  modulo
 			p_align.
 			'''
@@ -1088,12 +1088,12 @@ class ElfParser:
 				+ ord(buffer_list[self.header.e_phoff \
 				+ i*self.header.e_phentsize + 28])
 
-			# check which sections are in the current segment 
+			# check which sections are in the current segment
 			# (in memory) and add them
 			for section in self.sections:
 				if (section.elfN_shdr.sh_addr >= tempSegment.elfN_Phdr.p_vaddr
 					and (section.elfN_shdr.sh_addr + section.elfN_shdr.sh_size)
-					<= (tempSegment.elfN_Phdr.p_vaddr + 
+					<= (tempSegment.elfN_Phdr.p_vaddr +
 					tempSegment.elfN_Phdr.p_memsz)):
 					tempSegment.sectionsWithin.append(section)
 
@@ -1109,11 +1109,11 @@ class ElfParser:
 					continue
 
 				# check if segmentWithin lies within the outerSegment
-				if (segmentWithin.elfN_Phdr.p_offset 
+				if (segmentWithin.elfN_Phdr.p_offset
 					> outerSegment.elfN_Phdr.p_offset
-					and (segmentWithin.elfN_Phdr.p_offset 
-					+ segmentWithin.elfN_Phdr.p_filesz) 
-					< (outerSegment.elfN_Phdr.p_offset 
+					and (segmentWithin.elfN_Phdr.p_offset
+					+ segmentWithin.elfN_Phdr.p_filesz)
+					< (outerSegment.elfN_Phdr.p_offset
 					+ outerSegment.elfN_Phdr.p_filesz)):
 						outerSegment.segmentsWithin.append(segmentWithin)
 
@@ -1210,7 +1210,7 @@ class ElfParser:
 		pltRelSize = None
 		pltRelType = None
 		relEntrySize = None
-		relOffset = None		
+		relOffset = None
 		relSize = None
 		symbolEntrySize = None
 		symbolTableOffset = None
@@ -1302,7 +1302,7 @@ class ElfParser:
 			print 'NOTE: ".dynsym" section was found multiple times. ' \
 				+ 'Trying to use estimation to parse all symbols from' \
 				+ 'the symbol table'
-			dynSymSectionIgnore = True		
+			dynSymSectionIgnore = True
 
 		# check if symbol table offset matches the offset of the
 		# ".dynsym" section
@@ -1391,7 +1391,7 @@ class ElfParser:
 				'''
 				Elf32_Addr    r_offset;
 				'''
-				# in executable and share object files 
+				# in executable and share object files
 				# => r_offset holds a virtual address
 				# for 32 bit systems only
 				jmpRelEntry.r_offset = \
@@ -1456,7 +1456,7 @@ class ElfParser:
 				self.jumpRelocationEntries.append(jmpRelEntry)
 
 
-		# check if DT_REL entry exists (DT_REL is only 
+		# check if DT_REL entry exists (DT_REL is only
 		# mandatory when DT_RELA is not present)
 		# => parse relocation entries
 		if relOffset is not None:
@@ -1470,7 +1470,7 @@ class ElfParser:
 				'''
 				Elf32_Addr    r_offset;
 				'''
-				# in executable and share object files 
+				# in executable and share object files
 				# => r_offset holds a virtual address
 				# for 32 bit systems only
 				relEntry.r_offset = \
@@ -1501,7 +1501,7 @@ class ElfParser:
 
 				# for 32 bit systems only
 				# calculated: "r_info >> 8"
-				relEntry.r_sym = (relEntry.r_info >> 8)	
+				relEntry.r_sym = (relEntry.r_info >> 8)
 
 				# get values from the symbol table
 				tempOffset = symbolTableOffset \
@@ -1657,7 +1657,7 @@ class ElfParser:
 			if temp != "":
 				print "Segments within segment: " + temp
 
-			# get interpreter if segment is for interpreter 
+			# get interpreter if segment is for interpreter
 			# null-terminated string
 			if segment.elfN_Phdr.p_type == P_type.PT_INTERP:
 				temp = ""
@@ -1665,11 +1665,11 @@ class ElfParser:
 					temp += self.data[segment.elfN_Phdr.p_offset + i]
 				print "Interpreter: %s" % temp
 
-			print 
+			print
 			counter += 1
 
 
-		# search string table entry, string table size, 
+		# search string table entry, string table size,
 		# symbol table entry and symbol table entry size
 		stringTableOffset = None
 		stringTableSize = None
@@ -1677,14 +1677,14 @@ class ElfParser:
 		symbolEntrySize = None
 		for searchEntry in self.dynamicSegmentEntries:
 			if searchEntry.d_tag == D_tag.DT_STRTAB:
-				# data contains virtual memory address 
+				# data contains virtual memory address
 				# => calculate offset in file
 				stringTableOffset = \
 					self.virtualMemoryAddrToFileOffset(searchEntry.d_un)
 			if searchEntry.d_tag == D_tag.DT_STRSZ:
 				stringTableSize = searchEntry.d_un
 			if searchEntry.d_tag == D_tag.DT_SYMTAB:
-				# data contains virtual memory address 
+				# data contains virtual memory address
 				# => calculate offset in file
 				symbolTableOffset = \
 					self.virtualMemoryAddrToFileOffset(searchEntry.d_un)
@@ -1762,14 +1762,14 @@ class ElfParser:
 			print("\t"),
 
 			# try to convert the virtual memory address to a file offset
-			# in executable and share object files 
-			# => r_offset holds a virtual address			
+			# in executable and share object files
+			# => r_offset holds a virtual address
 			try:
 				print("0x" + ("%x" \
 					% self.virtualMemoryAddrToFileOffset(
 					entry.r_offset)).zfill(8)),
 			except:
-				print("None\t"),			
+				print("None\t"),
 
 			print("\t"),
 			print("0x" + ("%x" % entry.r_info).zfill(8)),
@@ -1777,9 +1777,9 @@ class ElfParser:
 
 			# translate type
 			if entry.r_type in R_type.reverse_lookup.keys():
-				print("%s" % R_type.reverse_lookup[entry.r_type]), 
+				print("%s" % R_type.reverse_lookup[entry.r_type]),
 			else:
-				print("0x%x" % entry.r_type),			
+				print("0x%x" % entry.r_type),
 
 			print("\t"),
 			print("0x" + ("%x" % symbol.st_value).zfill(8)),
@@ -1828,14 +1828,14 @@ class ElfParser:
 			print("\t"),
 
 			# try to convert the virtual memory address to a file offset
-			# in executable and share object files 
-			# => r_offset holds a virtual address			
+			# in executable and share object files
+			# => r_offset holds a virtual address
 			try:
 				print("0x" + ("%x" \
 					% self.virtualMemoryAddrToFileOffset(
 					entry.r_offset)).zfill(8)),
 			except:
-				print("None\t"),			
+				print("None\t"),
 
 			print("\t"),
 			print("0x" + ("%x" % entry.r_info).zfill(8)),
@@ -1843,9 +1843,9 @@ class ElfParser:
 
 			# translate type
 			if entry.r_type in R_type.reverse_lookup.keys():
-				print("%s" % R_type.reverse_lookup[entry.r_type]), 
+				print("%s" % R_type.reverse_lookup[entry.r_type]),
 			else:
-				print("0x%x" % entry.r_type),			
+				print("0x%x" % entry.r_type),
 
 			print("\t"),
 			print("0x" + ("%x" % symbol.st_value).zfill(8)),
@@ -1856,7 +1856,7 @@ class ElfParser:
 			print
 			counter += 1
 
-		print			
+		print
 
 		# output all dynamic symbol entries
 		print("Dynamic symbols (%d entries)" % len(self.dynamicSymbolEntries))
@@ -1881,7 +1881,7 @@ class ElfParser:
 			print("%s" % entry.symbolName),
 
 			print
-			counter += 1			
+			counter += 1
 
 
 	# this function generates a new ELF file from the attributes of the object
@@ -1909,14 +1909,14 @@ class ElfParser:
 		for section in self.sections:
 			temp = self.sectionHeaderEntryToList(section.elfN_shdr)
 			for i in range(len(temp)):
-				# as long as writePosition is not larger or equal to 
+				# as long as writePosition is not larger or equal to
 				# the length of the newfile list
 				# => overwrite old data
 				# if it is => append data
 				if writePosition < len(newfile):
 					newfile[writePosition] = temp[i]
 				else:
-					newfile.append(temp[i])	
+					newfile.append(temp[i])
 
 				writePosition += 1
 
@@ -1936,21 +1936,21 @@ class ElfParser:
 
 				# write name of all sections into string table
 				for i in range(len(section.sectionName)):
-					# as long as writePosition is not larger 
+					# as long as writePosition is not larger
 					# or equal to the length of the newfile list
 					# => overwrite old data
 					# if it is => append data
 					if writePosition < len(newfile):
 						newfile[writePosition] = section.sectionName[i]
 					else:
-						newfile.append(section.sectionName[i])			
+						newfile.append(section.sectionName[i])
 					writePosition += 1
 
 				# append null byte (all written strings are null-terminated)
 				if writePosition < len(newfile):
 					newfile[writePosition] = "\x00"
 				else:
-					newfile.append("\x00")			
+					newfile.append("\x00")
 
 		# ------
 
@@ -2060,7 +2060,7 @@ class ElfParser:
 
 			# add placeholder bytes to new file when the bytes do not already
 			# exist in the new file until size of header entry fits
-			while (self.header.e_phoff + (i*self.header.e_phentsize) 
+			while (self.header.e_phoff + (i*self.header.e_phentsize)
 				+ self.header.e_phentsize) > len(newfile):
 				newfile.append("\x00")
 
@@ -2211,10 +2211,10 @@ class ElfParser:
 				= (chr((self.dynamicSegmentEntries[i].d_un >> 24) & 0xff))
 
 		# overwrite rest of segment with 0x00 (default padding data)
-		# (NOTE: works in all test cases, but can cause md5 parsing 
+		# (NOTE: works in all test cases, but can cause md5 parsing
 		# check to fail!)
 		# for 32 bit systems only
-		for i in range(dynamicSegment.elfN_Phdr.p_filesz 
+		for i in range(dynamicSegment.elfN_Phdr.p_filesz
 			- (len(self.dynamicSegmentEntries)*8)):
 			newfile[dynamicSegment.elfN_Phdr.p_offset \
 				+ (len(self.dynamicSegmentEntries)*8) + i] = "\x00"
@@ -2225,10 +2225,10 @@ class ElfParser:
 		jmpRelOffset = None
 		pltRelSize = None
 		relEntrySize = None
-		relOffset = None		
+		relOffset = None
 		relSize = None
 		symbolTableOffset = None
-		symbolEntrySize = None		
+		symbolEntrySize = None
 		for dynEntry in self.dynamicSegmentEntries:
 			if dynEntry.d_tag == D_tag.DT_JMPREL:
 				# get the offset in the file of the jump relocation table
@@ -2252,7 +2252,7 @@ class ElfParser:
 				continue
 			if dynEntry.d_tag == D_tag.DT_SYMENT:
 				symbolEntrySize = dynEntry.d_un
-				continue				
+				continue
 			if dynEntry.d_tag == D_tag.DT_RELSZ:
 				relSize = dynEntry.d_un
 
@@ -2296,7 +2296,7 @@ class ElfParser:
 					= (chr((symbol.st_value >> 16) & 0xff))
 				newfile[symbolTableOffset \
 					+ (i * symbolEntrySize) + 7] \
-					= (chr((symbol.st_value >> 24) & 0xff))	
+					= (chr((symbol.st_value >> 24) & 0xff))
 
 				'''
 				Elf32_Word		st_size;
@@ -2340,10 +2340,10 @@ class ElfParser:
 					= (chr((symbol.st_shndx >> 0) & 0xff))
 				newfile[symbolTableOffset \
 					+ (i * symbolEntrySize) + 15] \
-					= (chr((symbol.st_shndx >> 8) & 0xff))	
+					= (chr((symbol.st_shndx >> 8) & 0xff))
 
 
-		# check if DT_JMPREL entry exists (it is optional 
+		# check if DT_JMPREL entry exists (it is optional
 		# for ELF executables/shared objects)
 		# => write jump relocation entries back
 		if jmpRelOffset is not None:
@@ -2384,7 +2384,7 @@ class ElfParser:
 				# when writing all dynamic symbol entries back
 				# if not => write dynamic symbol back
 				jmpRelEntry = self.jumpRelocationEntries[i]
-				dynSym = jmpRelEntry.symbol				
+				dynSym = jmpRelEntry.symbol
 				if (dynSym not in self.dynamicSymbolEntries
 					and symbolTableOffset is not None):
 
@@ -2422,7 +2422,7 @@ class ElfParser:
 						= (chr((symbol.st_value >> 16) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 7] \
-						= (chr((symbol.st_value >> 24) & 0xff))	
+						= (chr((symbol.st_value >> 24) & 0xff))
 
 					'''
 					Elf32_Word		st_size;
@@ -2466,10 +2466,10 @@ class ElfParser:
 						= (chr((symbol.st_shndx >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (jmpRelEntry.r_sym * symbolEntrySize) + 15] \
-						= (chr((symbol.st_shndx >> 8) & 0xff))	
+						= (chr((symbol.st_shndx >> 8) & 0xff))
 
 
-		# check if DT_REL entry exists (DT_REL is only mandatory 
+		# check if DT_REL entry exists (DT_REL is only mandatory
 		# when DT_RELA is not present)
 		# => write relocation entries back
 		if relOffset is not None:
@@ -2504,7 +2504,7 @@ class ElfParser:
 				# when writing all dynamic symbol entries back
 				# if not => write dynamic symbol back
 				relEntry = self.relocationEntries[i]
-				dynSym = relEntry.symbol				
+				dynSym = relEntry.symbol
 				if (dynSym not in self.dynamicSymbolEntries
 					and symbolTableOffset is not None):
 
@@ -2542,7 +2542,7 @@ class ElfParser:
 						= (chr((symbol.st_value >> 16) & 0xff))
 					newfile[symbolTableOffset \
 						+ (relEntry.r_sym * symbolEntrySize) + 7] \
-						= (chr((symbol.st_value >> 24) & 0xff))	
+						= (chr((symbol.st_value >> 24) & 0xff))
 
 					'''
 					Elf32_Word		st_size;
@@ -2586,7 +2586,7 @@ class ElfParser:
 						= (chr((symbol.st_shndx >> 0) & 0xff))
 					newfile[symbolTableOffset \
 						+ (relEntry.r_sym * symbolEntrySize) + 15] \
-						= (chr((symbol.st_shndx >> 8) & 0xff))	
+						= (chr((symbol.st_shndx >> 8) & 0xff))
 
 		# ------
 
@@ -2608,7 +2608,7 @@ class ElfParser:
 
 
 	# this function appends data to a selected segment number (if it fits)
-	# return values: (int) offset in file of appended data, 
+	# return values: (int) offset in file of appended data,
 	# (int) address in memory of appended data
 	def appendDataToSegment(self, data, segmentNumber, addNewSection=False,
 		newSectionName=None, extendExistingSection=False):
@@ -2620,15 +2620,15 @@ class ElfParser:
 
 		segmentToExtend = self.segments[segmentNumber]
 
-		# find segment that comes directly after the segment 
+		# find segment that comes directly after the segment
 		# to manipulate in the virtual memory
 		nextSegment, diff_p_vaddr \
 			= self.getNextSegmentAndFreeSpace(segmentToExtend)
 
-		# check if a segment exists directly after the segment 
+		# check if a segment exists directly after the segment
 		# to manipulate in the virtual memory
 		if nextSegment is None:
-			# segment directly after segment to 
+			# segment directly after segment to
 			# manipulate does not exist in virtual memory
 
 			# get memory address and offset in file of appended data
@@ -2641,11 +2641,11 @@ class ElfParser:
 			for i in range(len(data)):
 				self.data.insert((newDataOffset + i), data[i])
 
-			# adjust offsets of all following section 
+			# adjust offsets of all following section
 			# (for example symbol sections are often behind all segments)
 			for section in self.sections:
-				if (section.elfN_shdr.sh_offset >= 
-					(segmentToExtend.elfN_Phdr.p_offset 
+				if (section.elfN_shdr.sh_offset >=
+					(segmentToExtend.elfN_Phdr.p_offset
 					+ segmentToExtend.elfN_Phdr.p_filesz)):
 					section.elfN_shdr.sh_offset += len(data)
 
@@ -2653,11 +2653,11 @@ class ElfParser:
 			segmentToExtend.elfN_Phdr.p_filesz += len(data)
 
 			# extend size of data in memory of the modifed segment
-			segmentToExtend.elfN_Phdr.p_memsz += len(data)					
+			segmentToExtend.elfN_Phdr.p_memsz += len(data)
 
 
-		else: 
-			# segment directly after segment to 
+		else:
+			# segment directly after segment to
 			# manipulate exists in virtual memory
 
 			# check if data to append fits
@@ -2673,45 +2673,45 @@ class ElfParser:
 			# => 0x016f88 % 0x1000 = 0xf88
 			# both must have 0xf88 at the end of the address
 
-			# get how often the appended data fits in the 
+			# get how often the appended data fits in the
 			# alignment of the segment
 			alignmentMultiplier = int(len(data) \
 				/ segmentToExtend.elfN_Phdr.p_align) + 1
 
 			# calculate the size to add to the offsets
 			offsetAddition = alignmentMultiplier \
-				* segmentToExtend.elfN_Phdr.p_align 
+				* segmentToExtend.elfN_Phdr.p_align
 
 			# adjust offsets of all following section
 			for section in self.sections:
-				if (section.elfN_shdr.sh_offset 
+				if (section.elfN_shdr.sh_offset
 					>= nextSegment.elfN_Phdr.p_offset):
 					section.elfN_shdr.sh_offset += offsetAddition
 
-			# adjust offsets of following segments 
+			# adjust offsets of following segments
 			# (ignore the directly followed segment)
 			for segment in self.segments:
 				if segment != segmentToExtend and segment != nextSegment:
 					# use offset of the directly followed segment in order to
-					# ignore segments that lies within the 
+					# ignore segments that lies within the
 					# segment to manipulate
-					if (segment.elfN_Phdr.p_offset 
+					if (segment.elfN_Phdr.p_offset
 						> nextSegment.elfN_Phdr.p_offset):
 						segment.elfN_Phdr.p_offset += offsetAddition
 
-			# adjust offset of the directly following segment of the 
+			# adjust offset of the directly following segment of the
 			# segment to manipulate
 			nextSegment.elfN_Phdr.p_offset += offsetAddition
 
-			# if program header table lies behind the segment to manipulate 
+			# if program header table lies behind the segment to manipulate
 			# => move it
-			if (self.header.e_phoff > (segmentToExtend.elfN_Phdr.p_offset 
+			if (self.header.e_phoff > (segmentToExtend.elfN_Phdr.p_offset
 				+ segmentToExtend.elfN_Phdr.p_filesz)):
 				self.header.e_phoff += offsetAddition
 
-			# if section header table lies behind the segment to manipulate 
+			# if section header table lies behind the segment to manipulate
 			# => move it
-			if (self.header.e_shoff > (segmentToExtend.elfN_Phdr.p_offset 
+			if (self.header.e_shoff > (segmentToExtend.elfN_Phdr.p_offset
 				+ segmentToExtend.elfN_Phdr.p_filesz)):
 				self.header.e_shoff += offsetAddition
 
@@ -2719,13 +2719,13 @@ class ElfParser:
 			newDataMemoryAddr = segmentToExtend.elfN_Phdr.p_vaddr \
 				+ segmentToExtend.elfN_Phdr.p_memsz
 			newDataOffset = segmentToExtend.elfN_Phdr.p_offset \
-				+ segmentToExtend.elfN_Phdr.p_filesz	
+				+ segmentToExtend.elfN_Phdr.p_filesz
 
 			# insert data
 			for i in range(len(data)):
 				self.data.insert((newDataOffset + i), data[i])
 
-			# fill the rest with 0x00 until the offset addition in the 
+			# fill the rest with 0x00 until the offset addition in the
 			# file is reached
 			for i in range((offsetAddition - len(data))):
 				self.data.insert((newDataOffset + len(data) + i), "\x00")
@@ -2751,25 +2751,25 @@ class ElfParser:
 
 			# add section
 			# addNewSection(newSectionName, newSectionType, newSectionFlag,
-			# newSectionAddr, newSectionOffset, newSectionSize, 
-			# newSectionLink, newSectionInfo, newSectionAddrAlign, 
+			# newSectionAddr, newSectionOffset, newSectionSize,
+			# newSectionLink, newSectionInfo, newSectionAddrAlign,
 			# newSectionEntsize)
-			self.addNewSection(newSectionName, SH_type.SHT_PROGBITS, 
-				(SH_flags.SHF_EXECINSTR | SH_flags.SHF_ALLOC), 
-				newDataMemoryAddr, newDataOffset, len(data), 0, 0, 
+			self.addNewSection(newSectionName, SH_type.SHT_PROGBITS,
+				(SH_flags.SHF_EXECINSTR | SH_flags.SHF_ALLOC),
+				newDataMemoryAddr, newDataOffset, len(data), 0, 0,
 				newSectionAddrAlign, 0)
 
-		# if added data should extend an existing section 
+		# if added data should extend an existing section
 		# => search this section and extend it
 		if extendExistingSection and not addNewSection:
 			for section in self.sections:
-				# the end of an existing section in the virtual 
+				# the end of an existing section in the virtual
 				# memory is generally equal
 				# to the virtual memory address of the added data
-				if ((section.elfN_shdr.sh_addr + section.elfN_shdr.sh_size) 
+				if ((section.elfN_shdr.sh_addr + section.elfN_shdr.sh_size)
 					== newDataMemoryAddr):
-					# check if data is not appended to last section 
-					# => use free space between segments for section 
+					# check if data is not appended to last section
+					# => use free space between segments for section
 					if diff_p_vaddr is not None:
 						# extend the existing section
 						self.extendSection(section, diff_p_vaddr)
@@ -2791,8 +2791,8 @@ class ElfParser:
 
 	# this function generates and adds a new section to the ELF file
 	# return values: None
-	def addNewSection(self, newSectionName, newSectionType, newSectionFlag, 
-		newSectionAddr, newSectionOffset, newSectionSize, newSectionLink, 
+	def addNewSection(self, newSectionName, newSectionType, newSectionFlag,
+		newSectionAddr, newSectionOffset, newSectionSize, newSectionLink,
 		newSectionInfo, newSectionAddrAlign, newSectionEntsize):
 
 		# check if the file was completely parsed before
@@ -2810,9 +2810,9 @@ class ElfParser:
 
 			# when using gcc, first section is NULL section
 			# => create one and add it
-			# generateNewSection(sectionName, sh_name, sh_type, 
+			# generateNewSection(sectionName, sh_name, sh_type,
 			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
-			# sh_info, sh_addralign, sh_entsize)			
+			# sh_info, sh_addralign, sh_entsize)
 			newNullSection = self.generateNewSection("", 0, SH_type.SHT_NULL, 0,
 				0, 0, 0, 0, 0, 0, 0)
 			self.sections.append(newNullSection)
@@ -2826,18 +2826,18 @@ class ElfParser:
 			nameNewShstrtab = ".shstrtab"
 
 			# use third entry in new section header string table
-			# as index for the new created section (name for ".shstrtab" is 
+			# as index for the new created section (name for ".shstrtab" is
 			# second, name for NULL section first)
 			newSectionStringTableIndex = len(nameNewShstrtab) + 1 + 1
 
 			# generate new section object and add it
-			# generateNewSection(sectionName, sh_name, sh_type, 
+			# generateNewSection(sectionName, sh_name, sh_type,
 			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
 			# sh_info, sh_addralign, sh_entsize)
-			newSection = self.generateNewSection(newSectionName, 
-				newSectionStringTableIndex, newSectionType, newSectionFlag, 
-				newSectionAddr, newSectionOffset, newSectionSize, 
-				newSectionLink, newSectionInfo, newSectionAddrAlign, 
+			newSection = self.generateNewSection(newSectionName,
+				newSectionStringTableIndex, newSectionType, newSectionFlag,
+				newSectionAddr, newSectionOffset, newSectionSize,
+				newSectionLink, newSectionInfo, newSectionAddrAlign,
 				newSectionEntsize)
 			self.sections.append(newSection)
 
@@ -2849,11 +2849,11 @@ class ElfParser:
 				+ len(newSectionName) + 1 + 1
 
 			# generate ".shstrtab" section object and add it
-			# generateNewSection(sectionName, sh_name, sh_type, 
+			# generateNewSection(sectionName, sh_name, sh_type,
 			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
-			# sh_info, sh_addralign, sh_entsize)			
-			newShstrtabsection = self.generateNewSection(nameNewShstrtab, 
-				1, SH_type.SHT_STRTAB, 0, 
+			# sh_info, sh_addralign, sh_entsize)
+			newShstrtabsection = self.generateNewSection(nameNewShstrtab,
+				1, SH_type.SHT_STRTAB, 0,
 				0, offsetNewShstrtab, lengthNewShstrtab, 0, 0, 1, 0)
 			self.sections.append(newShstrtabsection)
 
@@ -2870,20 +2870,20 @@ class ElfParser:
 		# sections exist
 		# => just add section
 		else:
-			# get index in the string table of the name of the new section 
-			# (use size of string table to just append new name to string 
+			# get index in the string table of the name of the new section
+			# (use size of string table to just append new name to string
 			# table)
 			newSectionStringTableIndex \
 				= self.sections[self.header.e_shstrndx].elfN_shdr.sh_size
 
 			# generate new section object
-			# generateNewSection(sectionName, sh_name, sh_type, 
+			# generateNewSection(sectionName, sh_name, sh_type,
 			# sh_flags, sh_addr, sh_offset, sh_size, sh_link,
 			# sh_info, sh_addralign, sh_entsize)
-			newsection = self.generateNewSection(newSectionName, 
-				newSectionStringTableIndex, newSectionType, newSectionFlag, 
-				newSectionAddr, newSectionOffset, newSectionSize, 
-				newSectionLink, newSectionInfo, newSectionAddrAlign, 
+			newsection = self.generateNewSection(newSectionName,
+				newSectionStringTableIndex, newSectionType, newSectionFlag,
+				newSectionAddr, newSectionOffset, newSectionSize,
+				newSectionLink, newSectionInfo, newSectionAddrAlign,
 				newSectionEntsize)
 
 			# get position of new section
@@ -2891,11 +2891,11 @@ class ElfParser:
 			for i in range(self.header.e_shnum):
 				if (i+1) < self.header.e_shnum:
 					if (self.sections[i].elfN_shdr.sh_offset < newSectionOffset
-						and self.sections[i+1].elfN_shdr.sh_offset 
+						and self.sections[i+1].elfN_shdr.sh_offset
 						>= newSectionOffset):
 						positionNewSection = i+1
 
-						# if new section comes before string table section 
+						# if new section comes before string table section
 						# => adjust string table section index
 						if positionNewSection <= self.header.e_shstrndx:
 							self.header.e_shstrndx += 1
@@ -2907,19 +2907,19 @@ class ElfParser:
 				self.sections.insert(positionNewSection, newsection)
 
 			# section header table lies oft directly behind the string table
-			# check if new section name would overwrite data of 
+			# check if new section name would overwrite data of
 			# section header table
 			# => move section header table
-			if (self.header.e_shoff 
-				>= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
-				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size) 
-				and self.header.e_shoff 
-				<= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset 
-				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size 
+			if (self.header.e_shoff
+				>= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset
+				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size)
+				and self.header.e_shoff
+				<= (self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset
+				+ self.sections[self.header.e_shstrndx].elfN_shdr.sh_size
 				+ len(newSectionName) + 1)):
 				self.header.e_shoff += len(newSectionName) + 1
 
-			# add size of new name to string table + 1 for 
+			# add size of new name to string table + 1 for
 			# null-terminated C string
 			self.sections[self.header.e_shstrndx].elfN_shdr.sh_size \
 				+= len(newSectionName) + 1
@@ -2940,12 +2940,12 @@ class ElfParser:
 		sectionToExtend.elfN_shdr.sh_size += size
 
 
-	# this function searches for a executable segment from type 
+	# this function searches for a executable segment from type
 	# PT_LOAD in which the data fits
-	# return values: (class Segment) manipulated segment, 
-	# (int) offset in file of appended data, 
+	# return values: (class Segment) manipulated segment,
+	# (int) offset in file of appended data,
 	# (int) address in memory of appended data
-	def appendDataToExecutableSegment(self, data, addNewSection=False, 
+	def appendDataToExecutableSegment(self, data, addNewSection=False,
 		newSectionName=None, extendExistingSection=False):
 
 		# check if the file was completely parsed before
@@ -2956,7 +2956,7 @@ class ElfParser:
 		# get all executable segments from type PT_LOAD
 		possibleSegments = list()
 		for segment in self.segments:
-			if ((segment.elfN_Phdr.p_flags & P_flags.PF_X) == 1 
+			if ((segment.elfN_Phdr.p_flags & P_flags.PF_X) == 1
 				and segment.elfN_Phdr.p_type == P_type.PT_LOAD):
 				possibleSegments.append(segment)
 
@@ -2964,18 +2964,18 @@ class ElfParser:
 		found = False
 		for possibleSegment in possibleSegments:
 			diff_p_vaddr = None
-			# find segment that comes directly after the segment to 
+			# find segment that comes directly after the segment to
 			# manipulate in the virtual memory
 			# and get the free memory space in between
 			for i in range(len(self.segments)):
 				if self.segments[i] != possibleSegment:
-					if ((self.segments[i].elfN_Phdr.p_vaddr 
-						- (possibleSegment.elfN_Phdr.p_vaddr 
+					if ((self.segments[i].elfN_Phdr.p_vaddr
+						- (possibleSegment.elfN_Phdr.p_vaddr
 						+ possibleSegment.elfN_Phdr.p_memsz)) > 0):
 						if (diff_p_vaddr is None
-							or (self.segments[i].elfN_Phdr.p_vaddr 
-							- (possibleSegment.elfN_Phdr.p_vaddr 
-							+ possibleSegment.elfN_Phdr.p_memsz)) 
+							or (self.segments[i].elfN_Phdr.p_vaddr
+							- (possibleSegment.elfN_Phdr.p_vaddr
+							+ possibleSegment.elfN_Phdr.p_memsz))
 							< diff_p_vaddr):
 							diff_p_vaddr = self.segments[i].elfN_Phdr.p_vaddr \
 							- (possibleSegment.elfN_Phdr.p_vaddr \
@@ -2996,14 +2996,14 @@ class ElfParser:
 			newSectionName=newSectionName,
 			extendExistingSection=extendExistingSection)
 
-		# return manipulated segment, offset of appended data in file and 
+		# return manipulated segment, offset of appended data in file and
 		# memory address of appended data
 		return self.segments[segmentNumber], newDataOffset, newDataMemoryAddr
 
 
-	# this function gets the next segment of the given one and the 
+	# this function gets the next segment of the given one and the
 	# free space in memory in between
-	# return values: (class Segment) next segment, (int) free space; 
+	# return values: (class Segment) next segment, (int) free space;
 	# both None if no following segment was found
 	def getNextSegmentAndFreeSpace(self, segmentToSearch):
 
@@ -3012,19 +3012,19 @@ class ElfParser:
 			raise ValueError("Operation not possible. " \
 				+ "File was not completely parsed before.")
 
-		# find segment that comes directly after the segment to 
+		# find segment that comes directly after the segment to
 		# manipulate in the virtual memory
 		diff_p_vaddr = None
 		nextSegment = None
 		for segment in self.segments:
 			if segment != segmentToSearch:
-				if ((segment.elfN_Phdr.p_vaddr 
-					- (segmentToSearch.elfN_Phdr.p_vaddr 
+				if ((segment.elfN_Phdr.p_vaddr
+					- (segmentToSearch.elfN_Phdr.p_vaddr
 					+ segmentToSearch.elfN_Phdr.p_memsz)) > 0):
 					if (diff_p_vaddr is None
-						or (segment.elfN_Phdr.p_vaddr 
-						- (segmentToSearch.elfN_Phdr.p_vaddr 
-						+ segmentToSearch.elfN_Phdr.p_memsz)) 
+						or (segment.elfN_Phdr.p_vaddr
+						- (segmentToSearch.elfN_Phdr.p_vaddr
+						+ segmentToSearch.elfN_Phdr.p_memsz))
 						< diff_p_vaddr):
 						diff_p_vaddr = segment.elfN_Phdr.p_vaddr \
 							- (segmentToSearch.elfN_Phdr.p_vaddr \
@@ -3035,7 +3035,7 @@ class ElfParser:
 		return nextSegment, diff_p_vaddr
 
 
-	# this function is a wrapper function for 
+	# this function is a wrapper function for
 	# getNextSegmentAndFreeSpace(segmentToSearch)
 	# which returns only the free space in memory after the segment
 	# return values: (int) free space; None if no following segment was found
@@ -3067,7 +3067,7 @@ class ElfParser:
 		self.sections = list()
 
 
-	# this function overwrites data on the given offset 
+	# this function overwrites data on the given offset
 	# return values: None
 	def writeDataToFileOffset(self, offset, data, force=False):
 
@@ -3080,7 +3080,7 @@ class ElfParser:
 		segmentToManipulate = None
 		for segment in self.segments:
 			if (offset > segment.elfN_Phdr.p_offset
-				and offset < (segment.elfN_Phdr.p_offset 
+				and offset < (segment.elfN_Phdr.p_offset
 				+ segment.elfN_Phdr.p_filesz)):
 				segmentToManipulate = segment
 				break
@@ -3099,7 +3099,7 @@ class ElfParser:
 			and force is False):
 			raise ValueError('Size of data to manipulate: %d Not enough ' \
 				+ 'space in segment (Available: %d; use "force=True" to ' \
-				+ 'ignore this check).' % (len(data), 
+				+ 'ignore this check).' % (len(data),
 				(segmentToManipulate.elfN_Phdr.p_filesz - offset)))
 
 		# change data
@@ -3120,7 +3120,7 @@ class ElfParser:
 		foundSegment = None
 		for segment in self.segments:
 			if (memoryAddr > segment.elfN_Phdr.p_vaddr
-				and memoryAddr < (segment.elfN_Phdr.p_vaddr 
+				and memoryAddr < (segment.elfN_Phdr.p_vaddr
 				+ segment.elfN_Phdr.p_memsz)):
 				foundSegment = segment
 				break
@@ -3131,10 +3131,10 @@ class ElfParser:
 
 		# check if file is mapped 1:1 to memory
 		if foundSegment.elfN_Phdr.p_filesz != foundSegment.elfN_Phdr.p_memsz:
-			# check if the memory address relative to the virtual memory 
+			# check if the memory address relative to the virtual memory
 			# address of the segment lies within the file size of the segment
 			if ((memoryAddr - segment.elfN_Phdr.p_vaddr) > 0
-				and (memoryAddr - segment.elfN_Phdr.p_vaddr) 
+				and (memoryAddr - segment.elfN_Phdr.p_vaddr)
 				< foundSegment.elfN_Phdr.p_filesz):
 					pass
 			else:
@@ -3158,7 +3158,7 @@ class ElfParser:
 		foundSegment = None
 		for segment in self.segments:
 			if (offset > segment.elfN_Phdr.p_offset
-				and offset < (segment.elfN_Phdr.p_offset 
+				and offset < (segment.elfN_Phdr.p_offset
 				+ segment.elfN_Phdr.p_filesz)):
 				foundSegment = segment
 				break
@@ -3175,7 +3175,7 @@ class ElfParser:
 		return foundSegment.elfN_Phdr.p_vaddr + offset
 
 
-	# this function overwrites an entry in the got 
+	# this function overwrites an entry in the got
 	# (global offset table) in the file
 	# return values: None
 	def modifyGotEntryAddr(self, name, memoryAddr):
@@ -3195,7 +3195,7 @@ class ElfParser:
 			raise ValueError('Jump relocation entry with the name "%s" ' \
 				+ 'was not found.' % name)
 
-		# calculate file offset of got 
+		# calculate file offset of got
 		entryOffset = self.virtualMemoryAddrToFileOffset(
 			entryToModify.r_offset)
 
@@ -3211,7 +3211,7 @@ class ElfParser:
 		self.writeDataToFileOffset(entryOffset, newGotAddr)
 
 
-	# this function gets the value of the got (global offset table) entry 
+	# this function gets the value of the got (global offset table) entry
 	# (a memory address to jump to)
 	# return values: (int) value (memory address) of got entry
 	def getValueOfGotEntry(self, name):
@@ -3231,7 +3231,7 @@ class ElfParser:
 			raise ValueError('Jump relocation entry with the name "%s" ' \
 				+ 'was not found.' % name)
 
-		# calculate file offset of got 
+		# calculate file offset of got
 		entryOffset = self.virtualMemoryAddrToFileOffset(
 			entryToModify.r_offset)
 
@@ -3244,7 +3244,7 @@ class ElfParser:
 			+ ord(self.data[entryOffset]))
 
 
-	# this function gets the memory address of the got 
+	# this function gets the memory address of the got
 	# (global offset table) entry
 	# return values: (int) memory address of got entry
 	def getMemAddrOfGotEntry(self, name):
@@ -3287,10 +3287,10 @@ class ElfParser:
 		if not found:
 			return
 
-		# remove the found section 
+		# remove the found section
 		self.sections.pop(sectionNo)
 
-		# modify ELF header 
+		# modify ELF header
 		# => change section string table index and number of sections
 		if sectionNo < self.header.e_shstrndx:
 			self.header.e_shstrndx = self.header.e_shstrndx - 1
