@@ -3,7 +3,7 @@
 # written by sqall
 # twitter: https://twitter.com/sqall01
 # blog: http://blog.h4des.org
-# 
+#
 # Licensed under the GNU Public License, version 2.
 
 import sys
@@ -14,7 +14,7 @@ import random
 
 
 # the added sections can be used to confuse analysis tools
-# for example IDA 6.1.x tries to analyze all sections and it takes a 
+# for example IDA 6.1.x tries to analyze all sections and it takes a
 # lot of time until the file is loaded
 # (to circumvent this, just ignore sections and use segments)
 
@@ -27,35 +27,35 @@ allowedSections = list()
 
 for section in tempList:
 
-	# IDA 6.1.x throws error when section uses ".dynsym" area: 
+	# IDA 6.1.x throws error when section uses ".dynsym" area:
 	# "Bad file structure or read error (line xxxx). Continue?"
 	# and "Redeclared 'Dynamic symbol string table' section"
 	# and "Relocation to non-code/data/bss section. Skip?"
 	# and "Relocation to illegal symbol table. Skip?"
 
-	# IDA 6.1.x throws error when section uses ".dynstr" area: 
+	# IDA 6.1.x throws error when section uses ".dynstr" area:
 	# "Bad file structure or read error (line xxxx). Continue?"
 	# and "Redeclared 'Dynamic symbol string table' section"
 	# and "Relocation to non-code/data/bss section. Skip?"
 
-	# IDA 6.1.x throws error when section uses ".gnu.version_r" area: 
+	# IDA 6.1.x throws error when section uses ".gnu.version_r" area:
 	# "Relocation to non-code/data/bss section. Skip?"
 
-	# IDA 6.1.x throws error when section uses ".rel.dyn" area: 
+	# IDA 6.1.x throws error when section uses ".rel.dyn" area:
 	# "Relocation to non-code/data/bss section. Skip?"
 
 	# IDA 6.1.x throws error when ".bss" section is used: "Can't read input
 	# file (file structure error?), only part of file will be loaded..."
 
-	# "readelf: Error: Invalid sh_entsize" when section lies within 
+	# "readelf: Error: Invalid sh_entsize" when section lies within
 	# ".interp" section
-	# "readelf: Error: Invalid sh_entsize" when section lies within 
+	# "readelf: Error: Invalid sh_entsize" when section lies within
 	# ".note.ABI-tag" section
-	# "readelf: Error: Invalid sh_entsize" when section lies within 
+	# "readelf: Error: Invalid sh_entsize" when section lies within
 	# ".note.gnu.build-id" section
-	# "readelf: Error: Invalid sh_entsize" when section lies within 
+	# "readelf: Error: Invalid sh_entsize" when section lies within
 	# ".hash" section
-	# "readelf: Error: Invalid sh_entsize" when section lies within 
+	# "readelf: Error: Invalid sh_entsize" when section lies within
 	# ".gnu.hash" section
 
 	if (section.sectionName == ".gnu.version"
@@ -73,8 +73,8 @@ for section in tempList:
 		or section.sectionName == ".got.plt"
 		or section.sectionName == ".data"
 		or section.sectionName == ".shstrtab"):
-		
-		# add section to list of sections in which new sections can 
+
+		# add section to list of sections in which new sections can
 		# be set without causing any errors
 		allowedSections.append(section)
 
@@ -103,7 +103,7 @@ for count in range(10000):
 		sectionName = random.randint(0, len(allowedSections)-1)
 		newName = allowedSections[sectionName].sectionName
 
-		# ignore this section names because they can generate errors 
+		# ignore this section names because they can generate errors
 		# with IDA 6.1.x
 		if (newName != ".got"
 		and newName != ".got.plt"
@@ -112,9 +112,9 @@ for count in range(10000):
 		and newName != ".fini"):
 			break
 
-	testFile.addNewSection(newName, SH_type.SHT_PROGBITS, 
-		(SH_flags.SHF_EXECINSTR | SH_flags.SHF_ALLOC), addr, offset, 
-		size, section.elfN_shdr.sh_link, section.elfN_shdr.sh_info, 
+	testFile.addNewSection(newName, SH_type.SHT_PROGBITS,
+		(SH_flags.SHF_EXECINSTR | SH_flags.SHF_ALLOC), addr, offset,
+		size, section.elfN_shdr.sh_link, section.elfN_shdr.sh_info,
 		section.elfN_shdr.sh_addralign, 0)
 
 
