@@ -349,6 +349,10 @@ class ElfParser:
 	# return values: None
 	def parseElf(self, buffer_list, onlyParseHeader=False):
 
+		# for 32 bit systems only
+		if len(buffer_list) < 52:
+			raise ValueError("Buffer is too small to contain an ELF header.")
+
 		###############################################
 		# parse ELF header
 
