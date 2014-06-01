@@ -330,16 +330,13 @@ class ElfParser:
 			+ ord(self.data[offset + 14])
 
 		# extract name from the string table
-		temp = ""
-		for i in range(
-			(stringTableOffset + stringTableSize
-			- tempSymbol.ElfN_Sym.st_name)):
-			if (self.data[stringTableOffset
-				+ tempSymbol.ElfN_Sym.st_name + i] == "\x00"):
-				break
-			temp += self.data[stringTableOffset \
-				+ tempSymbol.ElfN_Sym.st_name + i]
-		tempSymbol.symbolName = temp
+		n_start = stringTableOffset + tempSymbol.ElfN_Sym.st_name
+		n_max_end = stringTableOffset + stringTableSize
+		try:
+			n_end = self.data.index('\x00', n_start, n_max_end)
+		except ValueError:
+			n_end = n_max_end
+		tempSymbol.symbolName = ''.join(self.data[n_start:n_end])
 
 		# return dynamic symbol
 		return tempSymbol
@@ -348,6 +345,10 @@ class ElfParser:
 	# this function parses the ELF file
 	# return values: None
 	def parseElf(self, buffer_list, onlyParseHeader=False):
+
+		# for 32 bit systems only
+		if len(buffer_list) < 52:
+			raise ValueError("Buffer is too small to contain an ELF header.")
 
 		###############################################
 		# parse ELF header
