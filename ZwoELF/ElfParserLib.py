@@ -330,13 +330,13 @@ class ElfParser:
 			+ ord(self.data[offset + 14])
 
 		# extract name from the string table
-		n_start = stringTableOffset + tempSymbol.ElfN_Sym.st_name
-		n_max_end = stringTableOffset + stringTableSize
+		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
+		nMaxEnd = stringTableOffset + stringTableSize
 		try:
-			n_end = self.data.index('\x00', n_start, n_max_end)
+			nEnd = self.data.index('\x00', nStart, nMaxEnd)
 		except ValueError:
-			n_end = n_max_end
-		tempSymbol.symbolName = ''.join(self.data[n_start:n_end])
+			nEnd = nMaxEnd
+		tempSymbol.symbolName = ''.join(self.data[nStart:nEnd])
 
 		# return dynamic symbol
 		return tempSymbol
