@@ -470,11 +470,14 @@ class P_type:
 	PT_GNU_STACK GNU extension which is used by the Linux kernel to
 		control the state of the stack via the flags set in  the
 		p_flags member.
+
+	PT_GNU_RELRO (0x6474e552)  Read only after relocation
 	'''
 	reverse_lookup = {0x0: "PT_NULL", 0x1: "PT_LOAD", 0x2: "PT_DYNAMIC",
 		0x3: "PT_INTERP", 0x4: "PT_NOTE", 0x5: "PT_SHLIB",
 		0x6: "PT_PHDR", 0x70000000: "PT_LOPROC",
-		0x7fffffff: "PT_HIPROC", 0x6474E550: "PT_GNU_EH_FRAME"}
+		0x7fffffff: "PT_HIPROC", 0x6474E550: "PT_GNU_EH_FRAME",
+		0x6474e551: "PT_GNU_STACK", 0x6474e552: "PT_GNU_RELRO"}
 	PT_NULL = 0x0
 	PT_LOAD = 0x1
 	PT_DYNAMIC = 0x2
@@ -485,6 +488,8 @@ class P_type:
 	PT_LOPROC = 0x70000000
 	PT_HIPROC = 0x7fffffff
 	PT_GNU_EH_FRAME = 0x6474E550
+	PT_GNU_STACK = 0x6474e551
+	PT_GNU_RELRO = 0x6474e552
 
 
 class P_flags:
