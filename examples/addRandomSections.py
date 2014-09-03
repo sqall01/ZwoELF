@@ -12,6 +12,21 @@ from ctypes import c_uint
 from ZwoELF import ElfParser, SH_type, SH_flags
 import random
 
+random.seed()
+
+try:
+	if sys.argv[1] == '--seed':
+		random.seed(int(sys.argv[2]))
+		sys.argv[1:3] = []
+
+	inputFile = sys.argv[1]
+	outputFile = sys.argv[2]
+except:
+	print('usage: {} [--seed <int>] <input file> <output file>'.format(sys.argv[0]))
+	print('')
+	print('       --seed <integer>: seed rng with constant (for deterministic results)')
+	sys.exit(1)
+
 
 # the added sections can be used to confuse analysis tools
 # for example IDA 6.1.x tries to analyze all sections and it takes a
@@ -19,7 +34,7 @@ import random
 # (to circumvent this, just ignore sections and use segments)
 
 
-testFile = ElfParser("x86_test_binaries/ls")
+testFile = ElfParser(inputFile)
 
 
 tempList = list(testFile.sections)
@@ -78,11 +93,8 @@ for section in tempList:
 		# be set without causing any errors
 		allowedSections.append(section)
 
-
-random.seed()
-
-# add 10000 new random sections to obfuscate original sections
-for count in range(10000):
+# add 128 new random sections to obfuscate original sections
+for count in range(128):
 
 	# calculate a random position within a random chosen section
 	inSection = random.randint(0, len(allowedSections)-1)
@@ -118,4 +130,4 @@ for count in range(10000):
 		section.elfN_shdr.sh_addralign, 0)
 
 
-testFile.writeElf("test_ls")	
+testFile.writeElf(outputFile)
