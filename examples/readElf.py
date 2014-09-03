@@ -12,8 +12,12 @@ from ZwoELF import ElfParser
 import sys
 
 
-x86File = sys.argv[1]
+try:
+	inputFile = sys.argv[1]
+except:
+	print('usage: {} <input file>'.format(sys.argv[0]))
+	sys.exit(1)
 
 
-test = ElfParser(x86File)
+test = ElfParser(inputFile)
 test.printElf()

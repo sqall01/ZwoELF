@@ -7,12 +7,19 @@
 #
 # Licensed under the GNU Public License, version 2.
 
+import sys
 from ctypes import c_uint
 from ZwoELF import ElfParser
 
+try:
+	inputFile = sys.argv[1]
+	outputFile = sys.argv[2]
+except:
+	print('usage: {} <input file> <output file>'.format(sys.argv[0]))
+	sys.exit(1)
 
-x86File = "simple"
-elfFile = ElfParser(x86File)
-jmpRelEntry = elfFile.getJmpRelEntryByName("printf")
+
+elfFile = ElfParser(inputFile)
+jmpRelEntry = elfFile.getJmpRelEntryByName("strlen")
 jmpRelEntry.symbol.ElfN_Sym.st_value = 0x41414141
-elfFile.writeElf("modified_simple")
+elfFile.writeElf(outputFile)

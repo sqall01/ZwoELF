@@ -7,14 +7,20 @@
 #
 # Licensed under the GNU Public License, version 2.
 
+import sys
 from ctypes import c_uint
 from ZwoELF import ElfParser
 
-x86File = "ls"
+try:
+	inputFile = sys.argv[1]
+	outputFile = sys.argv[2]
+except:
+	print('usage: {} <input file> <output file>'.format(sys.argv[0]))
+	sys.exit(1)
 
 
-print "Manipulating: %s" % x86File
-test = ElfParser(x86File)
+print "Manipulating: %s" % inputFile
+test = ElfParser(inputFile)
 
 freeSpace = test.getFreeSpaceAfterSegment(test.segments[2])
 print "Free space: %d Bytes " % freeSpace
@@ -57,6 +63,6 @@ test.writeDataToFileOffset(newDataOffset, testData)
 # change entry point to new data
 test.header.e_entry = newDataMemoryAddr
 
-test.writeElf("test_" + x86File)
+test.writeElf(outputFile)
 
 print "\n\n-----------\n\n"

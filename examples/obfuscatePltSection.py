@@ -12,6 +12,13 @@ import os
 from ctypes import c_uint
 from ZwoELF import ElfParser, SH_type, SH_flags
 
+try:
+	inputFile = sys.argv[1]
+	outputFile = sys.argv[2]
+except:
+	print('usage: {} <input file> <output file>'.format(sys.argv[0]))
+	sys.exit(1)
+
 
 # remove original ".got.plt" and ".plt" section and move them
 # to the ".text" section
@@ -24,7 +31,7 @@ from ZwoELF import ElfParser, SH_type, SH_flags
 # external functions are not resolved)
 
 
-testFile = ElfParser("x86_test_binaries/ls")
+testFile = ElfParser(inputFile)
 
 # remove ".got.plt" and ".plt" section
 testFile.deleteSectionByName(".got.plt")
@@ -54,5 +61,5 @@ for section in tempList:
 		break
 
 
-testFile.writeElf("test_ls")
-print "written to %s" % ("test_ls")		
+testFile.writeElf(outputFile)
+print "written to %s" % (outputFile)
