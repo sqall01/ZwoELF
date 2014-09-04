@@ -2988,8 +2988,8 @@ class ElfParser:
 				found = True
 				break
 		if not found:
-			raise ValueError("Size of data to append: %d Not enough space" \
-				+ " after existing executable segment found." % len(data))
+			raise ValueError(("Size of data to append: %d. Not enough space" \
+				+ " after existing executable segment found.") % len(data))
 
 		# append data to segment
 		newDataOffset, newDataMemoryAddr = self.appendDataToSegment(data,
@@ -3089,8 +3089,8 @@ class ElfParser:
 		# check if segment was found
 		if (segmentToManipulate is None
 			and force is False):
-			raise ValueError('Segment with offset 0x%x not found ' \
-				+ '(use "force=True" to ignore this check).' % offset)
+			raise ValueError(('Segment with offset 0x%x not found ' \
+				+ '(use "force=True" to ignore this check).') % offset)
 
 		# calculate position of data to manipulate in segment
 		dataPosition = offset - segmentToManipulate.elfN_Phdr.p_offset
@@ -3098,9 +3098,9 @@ class ElfParser:
 		# check if data to manipulate fits in segment
 		if (len(data) > (segmentToManipulate.elfN_Phdr.p_filesz - dataPosition)
 			and force is False):
-			raise ValueError('Size of data to manipulate: %d Not enough ' \
+			raise ValueError(('Size of data to manipulate: %d. Not enough ' \
 				+ 'space in segment (Available: %d; use "force=True" to ' \
-				+ 'ignore this check).' % (len(data),
+				+ 'ignore this check).') % (len(data),
 				(segmentToManipulate.elfN_Phdr.p_filesz - offset)))
 
 		# change data
@@ -3193,8 +3193,8 @@ class ElfParser:
 				entryToModify = jmpEntry
 				break
 		if entryToModify is None:
-			raise ValueError('Jump relocation entry with the name "%s" ' \
-				+ 'was not found.' % name)
+			raise ValueError('Jump relocation entry with the name' \
+				+ ' "%s" was not found.' % name)
 
 		# calculate file offset of got
 		entryOffset = self.virtualMemoryAddrToFileOffset(
@@ -3229,8 +3229,8 @@ class ElfParser:
 				entryToModify = jmpEntry
 				break
 		if entryToModify is None:
-			raise ValueError('Jump relocation entry with the name "%s" ' \
-				+ 'was not found.' % name)
+			raise ValueError('Jump relocation entry with the name' \
+				+ ' "%s" was not found.' % name)
 
 		# calculate file offset of got
 		entryOffset = self.virtualMemoryAddrToFileOffset(
@@ -3262,8 +3262,8 @@ class ElfParser:
 				entryToSearch = jmpEntry
 				break
 		if entryToSearch is None:
-			raise ValueError('Jump relocation entry with the name "%s"' \
-				+ ' was not found.' % name)
+			raise ValueError('Jump relocation entry with the name' \
+				+ ' "%s" was not found.' % name)
 
 		return entryToSearch.r_offset
 
@@ -3318,7 +3318,7 @@ class ElfParser:
 
 		# check if jump relocation entry was found
 		if foundEntry is None:
-			raise ValueError('Jump relocation entry with the name "%s"' \
-				+ ' was not found.' % name)
+			raise ValueError('Jump relocation entry with the name' \
+				+ ' "%s" was not found.' % name)
 
 		return foundEntry
