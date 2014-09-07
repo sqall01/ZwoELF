@@ -61,9 +61,9 @@ class ElfParser:
 
 
 	# this function converts a section header entry to a list of data
-	# return values: (list) converted section header entry
-	def sectionHeaderEntryToList(self, sectionHeaderEntryToWrite):
-		sectionHeaderEntryList = list()
+	# return values: (bytearray) converted section header entry
+	def sectionHeaderEntryToBytearray(self, sectionHeaderEntryToWrite):
+		sectionHeaderEntryList = bytearray()
 
 		'''
 		uint32_t   sh_name;
@@ -1906,18 +1906,9 @@ class ElfParser:
 
 		# write section header table back
 		for section in self.sections:
-			temp = self.sectionHeaderEntryToList(section.elfN_shdr)
-			for i in range(len(temp)):
-				# as long as writePosition is not larger or equal to
-				# the length of the newfile list
-				# => overwrite old data
-				# if it is => append data
-				if writePosition < len(newfile):
-					newfile[writePosition] = temp[i]
-				else:
-					newfile.append(temp[i])
-
-				writePosition += 1
+			temp = self.sectionHeaderEntryToBytearray(section.elfN_shdr)
+			newfile[writePosition:writePosition+len(temp)] = temp
+			writePosition += len(temp)
 
 		# ------
 
