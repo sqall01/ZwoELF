@@ -1629,103 +1629,36 @@ class ElfParser:
 		# ------
 
 		# write ELF header back
-		for i in range(len(self.header.e_ident)):
-			if i < len(newfile):
-				newfile[i] = self.header.e_ident[i]
-			else:
-				newfile.append(self.header.e_ident[i])
+		newfile[0:len(self.header.e_ident)] = self.header.e_ident
 
-
-		'''
-		uint16_t      e_type;
-		'''
-		newfile[16] = (chr(self.header.e_type & 0xff))
-		newfile[17] = (chr((self.header.e_type >> 8) & 0xff))
-
-		'''
-		uint16_t      e_machine;
-		'''
-		newfile[18] = (chr(self.header.e_machine & 0xff))
-		newfile[19] = (chr((self.header.e_machine >> 8) & 0xff))
-
-		'''
-		uint32_t      e_version;
-		'''
-		newfile[20] = (chr(self.header.e_version & 0xff))
-		newfile[21] = (chr((self.header.e_version >> 8) & 0xff))
-		newfile[22] = (chr((self.header.e_version >> 16) & 0xff))
-		newfile[23] = (chr((self.header.e_version >> 24) & 0xff))
-
-		'''
-		ElfN_Addr     e_entry;
-		'''
-		# for 32 bit systems only
-		newfile[24] = (chr(self.header.e_entry & 0xff))
-		newfile[25] = (chr((self.header.e_entry >> 8) & 0xff))
-		newfile[26] = (chr((self.header.e_entry >> 16) & 0xff))
-		newfile[27] = (chr((self.header.e_entry >> 24) & 0xff))
-
-		'''
-		ElfN_Off      e_phoff;
-		'''
-		# for 32 bit systems only
-		newfile[28] = (chr(self.header.e_phoff & 0xff))
-		newfile[29] = (chr((self.header.e_phoff >> 8) & 0xff))
-		newfile[30] = (chr((self.header.e_phoff >> 16) & 0xff))
-		newfile[31] = (chr((self.header.e_phoff >> 24) & 0xff))
-
-		'''
-		ElfN_Off      e_shoff;
-		'''
-		# for 32 bit systems only
-		newfile[32] = (chr(self.header.e_shoff & 0xff))
-		newfile[33] = (chr((self.header.e_shoff >> 8) & 0xff))
-		newfile[34] = (chr((self.header.e_shoff >> 16) & 0xff))
-		newfile[35] = (chr((self.header.e_shoff >> 24) & 0xff))
-
-		'''
-		uint32_t      e_flags;
-		'''
-		newfile[36] = (chr(self.header.e_flags & 0xff))
-		newfile[37] = (chr((self.header.e_flags >> 8) & 0xff))
-		newfile[38] = (chr((self.header.e_flags >> 16) & 0xff))
-		newfile[39] = (chr((self.header.e_flags >> 24) & 0xff))
-
-		'''
-		uint16_t      e_ehsize;
-		'''
-		newfile[40] = (chr(self.header.e_ehsize & 0xff))
-		newfile[41] = (chr((self.header.e_ehsize >> 8) & 0xff))
-
-		'''
-		uint16_t      e_phentsize;
-		'''
-		newfile[42] = (chr(self.header.e_phentsize & 0xff))
-		newfile[43] = (chr((self.header.e_phentsize >> 8) & 0xff))
-
-		'''
-		uint16_t      e_phnum;
-		'''
-		newfile[44] = (chr(self.header.e_phnum & 0xff))
-		newfile[45] = (chr((self.header.e_phnum >> 8) & 0xff))
-
-		'''
-		uint16_t      e_shentsize;
-		'''
-		newfile[46] = (chr(self.header.e_shentsize & 0xff))
-		newfile[47] = (chr((self.header.e_shentsize >> 8) & 0xff))
-
-		'''
-		uint16_t      e_shnum;
-		'''
-		newfile[48] = (chr(self.header.e_shnum & 0xff))
-		newfile[49] = (chr((self.header.e_shnum >> 8) & 0xff))
-
-		'''
-		uint16_t      e_shstrndx;
-		'''
-		newfile[50] = (chr(self.header.e_shstrndx & 0xff))
-		newfile[51] = (chr((self.header.e_shstrndx >> 8) & 0xff))
+		newfile[16:52] = struct.pack('<HHIIIIIHHHHHH',
+			# uint16_t      e_type;
+			self.header.e_type,
+			# uint16_t      e_machine;
+			self.header.e_machine,
+			# uint32_t      e_version;
+			self.header.e_version,
+			# ElfN_Addr     e_entry;   (32 bit only!)
+			self.header.e_entry,
+			# ElfN_Off      e_phoff;   (32 bit only!)
+			self.header.e_phoff,
+			# ElfN_Off      e_shoff;   (32 bit only!)
+			self.header.e_shoff,
+			# uint32_t      e_flags;
+			self.header.e_flags,
+			# uint16_t      e_ehsize;
+			self.header.e_ehsize,
+			# uint16_t      e_phentsize;
+			self.header.e_phentsize,
+			# uint16_t      e_phnum;
+			self.header.e_phnum,
+			# uint16_t      e_shentsize;
+			self.header.e_shentsize,
+			# uint16_t      e_shnum;
+			self.header.e_shnum,
+			# uint16_t      e_shstrndx;
+			self.header.e_shstrndx
+		)
 
 		# ------
 
@@ -1738,108 +1671,34 @@ class ElfParser:
 				+ self.header.e_phentsize) > len(newfile):
 				newfile.append("\x00")
 
-			'''
-			uint32_t   p_type;
-			'''
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 0] \
-				= (chr(self.segments[i].elfN_Phdr.p_type & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 1] \
-				= (chr((self.segments[i].elfN_Phdr.p_type >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 2] \
-				= (chr((self.segments[i].elfN_Phdr.p_type >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 3] \
-				= (chr((self.segments[i].elfN_Phdr.p_type >> 24) & 0xff))
+			tempOffset = self.header.e_phoff + i*self.header.e_phentsize
+			newfile[tempOffset:tempOffset+32] = struct.pack('<IIIIIIII',
+				# uint32_t   p_type;
+				self.segments[i].elfN_Phdr.p_type,
 
-			'''
-			Elf32_Off  p_offset;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 4] \
-				= (chr(self.segments[i].elfN_Phdr.p_offset & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 5] \
-				= (chr((self.segments[i].elfN_Phdr.p_offset >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 6] \
-				= (chr((self.segments[i].elfN_Phdr.p_offset >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 7] \
-				= (chr((self.segments[i].elfN_Phdr.p_offset >> 24) & 0xff))
+				# Elf32_Off  p_offset;    (32 bit only!)
+				self.segments[i].elfN_Phdr.p_offset,
 
-			'''
-			Elf32_Addr p_vaddr;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 8] \
-				= (chr(self.segments[i].elfN_Phdr.p_vaddr & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 9] \
-				= (chr((self.segments[i].elfN_Phdr.p_vaddr >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 10] \
-				= (chr((self.segments[i].elfN_Phdr.p_vaddr >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 11] \
-				= (chr((self.segments[i].elfN_Phdr.p_vaddr >> 24) & 0xff))
+				# Elf32_Addr p_vaddr;     (32 bit only!)
+				self.segments[i].elfN_Phdr.p_vaddr,
 
-			'''
-			Elf32_Addr p_paddr;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 12] \
-				= (chr(self.segments[i].elfN_Phdr.p_paddr & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 13] \
-				= (chr((self.segments[i].elfN_Phdr.p_paddr >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 14] \
-				= (chr((self.segments[i].elfN_Phdr.p_paddr >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 15] \
-				= (chr((self.segments[i].elfN_Phdr.p_paddr >> 24) & 0xff))
+				# Elf32_Addr p_paddr;     (32 bit only!)
+				self.segments[i].elfN_Phdr.p_paddr,
 
-			'''
-			uint32_t   p_filesz;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 16] \
-				= (chr(self.segments[i].elfN_Phdr.p_filesz & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 17] \
-				= (chr((self.segments[i].elfN_Phdr.p_filesz >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 18] \
-				= (chr((self.segments[i].elfN_Phdr.p_filesz >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 19] \
-				= (chr((self.segments[i].elfN_Phdr.p_filesz >> 24) & 0xff))
+				# uint32_t   p_filesz;    (32 bit only!)
+				self.segments[i].elfN_Phdr.p_filesz,
 
-			'''
-			uint32_t   p_memsz;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 20] \
-				= (chr(self.segments[i].elfN_Phdr.p_memsz & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 21] \
-				= (chr((self.segments[i].elfN_Phdr.p_memsz >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 22] \
-				= (chr((self.segments[i].elfN_Phdr.p_memsz >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 23] \
-				= (chr((self.segments[i].elfN_Phdr.p_memsz >> 24) & 0xff))
+				# uint32_t   p_memsz;     (32 bit only!)
+				self.segments[i].elfN_Phdr.p_memsz,
 
-			'''
-			uint32_t   p_flags;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 24] \
-				= (chr(self.segments[i].elfN_Phdr.p_flags & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 25] \
-				= (chr((self.segments[i].elfN_Phdr.p_flags >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 26] \
-				= (chr((self.segments[i].elfN_Phdr.p_flags >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 27] \
-				= (chr((self.segments[i].elfN_Phdr.p_flags >> 24) & 0xff))
+				# uint32_t   p_flags;     (32 bit only!)
+				self.segments[i].elfN_Phdr.p_flags,
 
-			'''
-			uint32_t   p_align;
-			'''
-			# for 32 bit systems only
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 28] \
-				= (chr(self.segments[i].elfN_Phdr.p_align & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 29] \
-				= (chr((self.segments[i].elfN_Phdr.p_align >> 8) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 30] \
-				= (chr((self.segments[i].elfN_Phdr.p_align >> 16) & 0xff))
-			newfile[self.header.e_phoff + (i*self.header.e_phentsize) + 31] \
-				= (chr((self.segments[i].elfN_Phdr.p_align >> 24) & 0xff))
+				# uint32_t   p_align;     (32 bit only!)
+				self.segments[i].elfN_Phdr.p_align,
+			)
+			del tempOffset
+
 
 		# ------
 
@@ -1855,34 +1714,18 @@ class ElfParser:
 		# write all dynamic segment entries back
 		for i in range(len(self.dynamicSegmentEntries)):
 
-			'''
-			Elf32_Sword    d_tag;
-			'''
-			# for 32 bit systems only
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 0] \
-				= (chr(self.dynamicSegmentEntries[i].d_tag & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 1] \
-				= (chr((self.dynamicSegmentEntries[i].d_tag >> 8) & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 2] \
-				= (chr((self.dynamicSegmentEntries[i].d_tag >> 16) & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 3] \
-				= (chr((self.dynamicSegmentEntries[i].d_tag >> 24) & 0xff))
+			tempOffset = dynamicSegment.elfN_Phdr.p_offset + i*8
+			newfile[tempOffset:tempOffset+8] = struct.pack('<II',
+				# Elf32_Sword    d_tag;   (32 bit only!)
+				self.dynamicSegmentEntries[i].d_tag,
 
-			'''
-			union {
-				Elf32_Word d_val;
-				Elf32_Addr d_ptr;
-			} d_un;
-			'''
-			# for 32 bit systems only
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 4] \
-				= (chr(self.dynamicSegmentEntries[i].d_un & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 5] \
-				= (chr((self.dynamicSegmentEntries[i].d_un >> 8) & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 6] \
-				= (chr((self.dynamicSegmentEntries[i].d_un >> 16) & 0xff))
-			newfile[dynamicSegment.elfN_Phdr.p_offset + (i*8) + 7] \
-				= (chr((self.dynamicSegmentEntries[i].d_un >> 24) & 0xff))
+				# union {
+				#       Elf32_Word d_val;
+				#       Elf32_Addr d_ptr;
+				# } d_un;                 (32 bit only!)
+				self.dynamicSegmentEntries[i].d_un,
+			)
+			del tempOffset
 
 		# overwrite rest of segment with 0x00 (default padding data)
 		# (NOTE: works in all test cases, but can cause md5 parsing
@@ -1939,82 +1782,27 @@ class ElfParser:
 				dynSymEntry = self.dynamicSymbolEntries[i]
 				symbol = dynSymEntry.ElfN_Sym
 
-				'''
-				Elf32_Word		st_name;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-				+ (i * symbolEntrySize) + 0] \
-					= (chr((symbol.st_name >> 0) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 1] \
-					= (chr((symbol.st_name >> 8) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 2] \
-					= (chr((symbol.st_name >> 16) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 3] \
-					= (chr((symbol.st_name >> 24) & 0xff))
-				'''
-				Elf32_Addr		st_value;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 4] \
-					= (chr((symbol.st_value >> 0) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 5] \
-					= (chr((symbol.st_value >> 8) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 6] \
-					= (chr((symbol.st_value >> 16) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 7] \
-					= (chr((symbol.st_value >> 24) & 0xff))
+				tempOffset = symbolTableOffset + i * symbolEntrySize
+				newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
+					# Elf32_Word     st_name;    (32 bit only!)
+					symbol.st_name,
 
-				'''
-				Elf32_Word		st_size;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 8] \
-					= (chr((symbol.st_size >> 0) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 9] \
-					= (chr((symbol.st_size >> 8) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 10] \
-					= (chr((symbol.st_size >> 16) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 11] \
-					= (chr((symbol.st_size >> 24) & 0xff))
+					# Elf32_Addr     st_value;   (32 bit only!)
+					symbol.st_value,
 
-				'''
-				unsigned char	st_info;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 12] \
-					= (chr((symbol.st_info) & 0xff))
+					# Elf32_Word     st_size;    (32 bit only!)
+					symbol.st_size,
 
-				'''
-				unsigned char	st_other;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 13] \
-					= (chr((symbol.st_other) & 0xff))
+					# unsigned char  st_info;    (32 bit only!)
+					symbol.st_info,
 
-				'''
-				Elf32_Half		st_shndx;
-				'''
-				# for 32 bit systems only
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 14] \
-					= (chr((symbol.st_shndx >> 0) & 0xff))
-				newfile[symbolTableOffset \
-					+ (i * symbolEntrySize) + 15] \
-					= (chr((symbol.st_shndx >> 8) & 0xff))
+					# unsigned char  st_other;   (32 bit only!)
+					symbol.st_other,
+
+					# Elf32_Half     st_shndx;   (32 bit only!)
+					symbol.st_shndx,
+				)
+				del tempOffset
 
 
 		# check if DT_JMPREL entry exists (it is optional
@@ -2023,37 +1811,14 @@ class ElfParser:
 		dynSymSet = set(self.dynamicSymbolEntries)
 		if jmpRelOffset is not None:
 			for i in range(len(self.jumpRelocationEntries)):
-				'''
-				Elf32_Addr    r_offset;
-				'''
-				# for 32 bit systems only
-				newfile[jmpRelOffset + (i*relEntrySize) + 0] \
-					= (chr(self.jumpRelocationEntries[i].r_offset & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 1] \
-					= (chr((self.jumpRelocationEntries[i].r_offset \
-					>> 8) & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 2] \
-					= (chr((self.jumpRelocationEntries[i].r_offset \
-					>> 16) & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 3] \
-					= (chr((self.jumpRelocationEntries[i].r_offset \
-					>> 24) & 0xff))
-
-				'''
-				Elf32_Word    r_info;
-				'''
-				# for 32 bit systems only
-				newfile[jmpRelOffset + (i*relEntrySize) + 4] \
-					= (chr(self.jumpRelocationEntries[i].r_info & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 5] \
-					= (chr((self.jumpRelocationEntries[i].r_info \
-					>> 8) & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 6] \
-					= (chr((self.jumpRelocationEntries[i].r_info \
-					>> 16) & 0xff))
-				newfile[jmpRelOffset + (i*relEntrySize) + 7] \
-					= (chr((self.jumpRelocationEntries[i].r_info \
-					>> 24) & 0xff))
+				tempOffset = jmpRelOffset + (i*relEntrySize)
+				newfile[tempOffset:tempOffset+8] = struct.pack('<II',
+					# Elf32_Addr    r_offset
+					self.jumpRelocationEntries[i].r_offset,
+					# Elf32_Word    r_info
+					self.jumpRelocationEntries[i].r_info
+				)
+				del tempOffset
 
 				# check if dynamic symbol was already written
 				# when writing all dynamic symbol entries back
@@ -2065,115 +1830,37 @@ class ElfParser:
 
 					symbol = dynSym.ElfN_Sym
 
-					'''
-					Elf32_Word		st_name;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 0] \
-						= (chr((symbol.st_name >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 1] \
-						= (chr((symbol.st_name >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 2] \
-						= (chr((symbol.st_name >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 3] \
-						= (chr((symbol.st_name >> 24) & 0xff))
-
-					'''
-					Elf32_Addr		st_value;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 4] \
-						= (chr((symbol.st_value >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 5] \
-						= (chr((symbol.st_value >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 6] \
-						= (chr((symbol.st_value >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 7] \
-						= (chr((symbol.st_value >> 24) & 0xff))
-
-					'''
-					Elf32_Word		st_size;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 8] \
-						= (chr((symbol.st_size >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 9] \
-						= (chr((symbol.st_size >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 10] \
-						= (chr((symbol.st_size >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 11] \
-						= (chr((symbol.st_size >> 24) & 0xff))
-
-					'''
-					unsigned char	st_info;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 12] \
-						= (chr((symbol.st_info) & 0xff))
-
-					'''
-					unsigned char	st_other;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 13] \
-						= (chr((symbol.st_other) & 0xff))
-
-					'''
-					Elf32_Half		st_shndx;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 14] \
-						= (chr((symbol.st_shndx >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (jmpRelEntry.r_sym * symbolEntrySize) + 15] \
-						= (chr((symbol.st_shndx >> 8) & 0xff))
-
+					tempOffset = symbolTableOffset \
+						+ jmpRelEntry.r_sym * symbolEntrySize
+					newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
+						# Elf32_Word      st_name;
+						symbol.st_name,
+						# Elf32_Addr      st_value;
+						symbol.st_value,
+						# Elf32_Word      st_size;
+						symbol.st_size,
+						# unsigned char   st_info;
+						symbol.st_info,
+						# unsigned char   st_other;
+						symbol.st_other,
+						# Elf32_Half      st_shndx;
+						symbol.st_shndx
+					)
+					del tempOffset
 
 		# check if DT_REL entry exists (DT_REL is only mandatory
 		# when DT_RELA is not present)
 		# => write relocation entries back
 		if relOffset is not None:
 			for i in range(len(self.relocationEntries)):
-				'''
-				Elf32_Addr    r_offset;
-				'''
-				# for 32 bit systems only
-				newfile[relOffset + (i*relEntrySize) + 0] \
-					= (chr(self.relocationEntries[i].r_offset & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 1] \
-					= (chr((self.relocationEntries[i].r_offset >> 8) & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 2] \
-					= (chr((self.relocationEntries[i].r_offset >> 16) & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 3] \
-					= (chr((self.relocationEntries[i].r_offset >> 24) & 0xff))
-
-				'''
-				Elf32_Word    r_info;
-				'''
-				# for 32 bit systems only
-				newfile[relOffset + (i*relEntrySize) + 4] \
-					= (chr(self.relocationEntries[i].r_info & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 5] \
-					= (chr((self.relocationEntries[i].r_info >> 8) & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 6] \
-					= (chr((self.relocationEntries[i].r_info >> 16) & 0xff))
-				newfile[relOffset + (i*relEntrySize) + 7] \
-					= (chr((self.relocationEntries[i].r_info >> 24) & 0xff))
+				tempOffset = relOffset + (i*relEntrySize)
+				newfile[tempOffset:tempOffset+8] = struct.pack('<II',
+					# Elf32_Addr    r_offset;
+					self.relocationEntries[i].r_offset,
+					# Elf32_Word    r_info;
+					self.relocationEntries[i].r_info
+				)
+				del tempOffset
 
 				# check if dynamic symbol was already written
 				# when writing all dynamic symbol entries back
@@ -2185,83 +1872,23 @@ class ElfParser:
 
 					symbol = dynSym.ElfN_Sym
 
-					'''
-					Elf32_Word		st_name;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 0] \
-						= (chr((symbol.st_name >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 1] \
-						= (chr((symbol.st_name >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 2] \
-						= (chr((symbol.st_name >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 3] \
-						= (chr((symbol.st_name >> 24) & 0xff))
-
-					'''
-					Elf32_Addr		st_value;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 4] \
-						= (chr((symbol.st_value >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 5] \
-						= (chr((symbol.st_value >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 6] \
-						= (chr((symbol.st_value >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 7] \
-						= (chr((symbol.st_value >> 24) & 0xff))
-
-					'''
-					Elf32_Word		st_size;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 8] \
-						= (chr((symbol.st_size >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 9] \
-						= (chr((symbol.st_size >> 8) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 10] \
-						= (chr((symbol.st_size >> 16) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 11] \
-						= (chr((symbol.st_size >> 24) & 0xff))
-
-					'''
-					unsigned char	st_info;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 12] \
-						= (chr((symbol.st_info) & 0xff))
-
-					'''
-					unsigned char	st_other;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 13] \
-						= (chr((symbol.st_other) & 0xff))
-
-					'''
-					Elf32_Half		st_shndx;
-					'''
-					# for 32 bit systems only
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 14] \
-						= (chr((symbol.st_shndx >> 0) & 0xff))
-					newfile[symbolTableOffset \
-						+ (relEntry.r_sym * symbolEntrySize) + 15] \
-						= (chr((symbol.st_shndx >> 8) & 0xff))
+					tempOffset = symbolTableOffset \
+						+ jmpRelEntry.r_sym * symbolEntrySize
+					newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
+						# Elf32_Word      st_name;
+						symbol.st_name,
+						# Elf32_Addr      st_value;
+						symbol.st_value,
+						# Elf32_Word      st_size;
+						symbol.st_size,
+						# unsigned char   st_info;
+						symbol.st_info,
+						# unsigned char   st_other;
+						symbol.st_other,
+						# Elf32_Half      st_shndx;
+						symbol.st_shndx
+					)
+					del tempOffset
 
 		# ------
 
