@@ -29,12 +29,11 @@ class ElfParser:
 		self.jumpRelocationEntries = list()
 		self.relocationEntries = list()
 		self.startOffset = startOffset
-		self.data = list()
 
 		# read file and convert data to list
 		f = open(filename, "rb")
 		f.seek(self.startOffset, 0)
-		self.data = list(f.read())
+		self.data = bytearray(f.read())
 		f.close()
 
 		# parse ELF file
@@ -44,12 +43,12 @@ class ElfParser:
 		if self.fileParsed is True:
 			# generate md5 hash of file that was parsed
 			tempHash = hashlib.md5()
-			tempHash.update("".join(self.data))
+			tempHash.update(self.data)
 			oldFileHash = tempHash.digest()
 
 			# generate md5 hash of file that was newly generated
 			tempHash = hashlib.md5()
-			tempHash.update("".join(self.generateElf()))
+			tempHash.update(self.generateElf())
 			newFileHash = tempHash.digest()
 
 			# check if parsed ELF file and new generated one are the same
@@ -280,54 +279,54 @@ class ElfParser:
 		'''
 		# for 32 bit systems only
 		tempSymbol.ElfN_Sym.st_name = \
-			(ord(self.data[offset + 3]) \
+			(self.data[offset + 3] \
 			<< 24) \
-			+ (ord(self.data[offset + 2]) \
+			+ (self.data[offset + 2] \
 			<< 16) \
-			+ (ord(self.data[offset + 1]) \
+			+ (self.data[offset + 1] \
 			<< 8) \
-			+ ord(self.data[offset])
+			+ self.data[offset]
 
 		'''
 		Elf32_Addr		st_value;
 		'''
 		# for 32 bit systems only
 		tempSymbol.ElfN_Sym.st_value = \
-			(ord(self.data[offset + 7]) \
-			<< 24) + (ord(self.data[offset + 6]) \
-			<< 16) + (ord(self.data[offset + 5]) \
-			<< 8) + ord(self.data[offset + 4])
+			(self.data[offset + 7] << 24) \
+			+ (self.data[offset + 6] << 16) \
+			+ (self.data[offset + 5] << 8) \
+			+ self.data[offset + 4]
 
 		'''
 		Elf32_Word		st_size;
 		'''
 		# for 32 bit systems only
 		tempSymbol.ElfN_Sym.st_size = \
-			(ord(self.data[offset + 11]) << 24) \
-			+ (ord(self.data[offset + 10]) << 16) \
-			+ (ord(self.data[offset + 9]) << 8) \
-			+ ord(self.data[offset + 8])
+			(self.data[offset + 11] << 24) \
+			+ (self.data[offset + 10] << 16) \
+			+ (self.data[offset + 9] << 8) \
+			+ self.data[offset + 8]
 
 		'''
 		unsigned char	st_info;
 		'''
 		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_info = ord(self.data[offset + 12])
+		tempSymbol.ElfN_Sym.st_info = self.data[offset + 12]
 
 		'''
 		unsigned char	st_other;
 		'''
 		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_other = ord(self.data[offset + 13])
+		tempSymbol.ElfN_Sym.st_other = self.data[offset + 13]
 
 		'''
 		Elf32_Half		st_shndx;
 		'''
 		# for 32 bit systems only
 		tempSymbol.ElfN_Sym.st_shndx = \
-			(ord(self.data[offset + 15]) \
+			(self.data[offset + 15] \
 			<< 8) \
-			+ ord(self.data[offset + 14])
+			+ self.data[offset + 14]
 
 		# extract name from the string table
 		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
@@ -336,7 +335,7 @@ class ElfParser:
 			nEnd = self.data.index('\x00', nStart, nMaxEnd)
 		except ValueError:
 			nEnd = nMaxEnd
-		tempSymbol.symbolName = ''.join(self.data[nStart:nEnd])
+		tempSymbol.symbolName = str(self.data[nStart:nEnd])
 
 		# return dynamic symbol
 		return tempSymbol
@@ -392,7 +391,7 @@ class ElfParser:
 
 		This member of the structure identifies the object file type.
 		'''
-		self.header.e_type = ord(buffer_list[17])*0x100 + ord(buffer_list[16])
+		self.header.e_type = buffer_list[17]*0x100 + buffer_list[16]
 
 
 		'''
@@ -400,8 +399,8 @@ class ElfParser:
 
 		This member specifies the required architecture for an individual file.
 		'''
-		self.header.e_machine = ord(buffer_list[19])*0x100 \
-			+ ord(buffer_list[18])
+		self.header.e_machine = buffer_list[19]*0x100 \
+			+ buffer_list[18]
 
 
 		'''
@@ -412,9 +411,9 @@ class ElfParser:
 		EV_NONE     Invalid version.
 		EV_CURRENT  Current version.
 		'''
-		self.header.e_version = ord(buffer_list[23])*0x1000000 \
-			+ ord(buffer_list[22])*0x10000 + ord(buffer_list[21])*0x100 \
-			+ ord(buffer_list[20])
+		self.header.e_version = buffer_list[23]*0x1000000 \
+			+ buffer_list[22]*0x10000 + buffer_list[21]*0x100 \
+			+ buffer_list[20]
 
 
 		'''
@@ -425,9 +424,9 @@ class ElfParser:
 		associated entry point, this member holds zero.
 		'''
 		# for 32 bit systems only
-		self.header.e_entry = ord(buffer_list[27])*0x1000000 \
-			+ ord(buffer_list[26])*0x10000 + ord(buffer_list[25])*0x100 \
-			+ ord(buffer_list[24])
+		self.header.e_entry = buffer_list[27]*0x1000000 \
+			+ buffer_list[26]*0x10000 + buffer_list[25]*0x100 \
+			+ buffer_list[24]
 
 
 		'''
@@ -437,9 +436,9 @@ class ElfParser:
 		If the file has no program header table, this member holds zero.
 		'''
 		# for 32 bit systems only
-		self.header.e_phoff = ord(buffer_list[31])*0x1000000 \
-			+ ord(buffer_list[30])*0x10000 + ord(buffer_list[29])*0x100 \
-			+ ord(buffer_list[28])
+		self.header.e_phoff = buffer_list[31]*0x1000000 \
+			+ buffer_list[30]*0x10000 + buffer_list[29]*0x100 \
+			+ buffer_list[28]
 
 
 		'''
@@ -450,9 +449,9 @@ class ElfParser:
 		table this member holds zero.
 		'''
 		# for 32 bit systems only
-		self.header.e_shoff = ord(buffer_list[35])*0x1000000 \
-			+ ord(buffer_list[34])*0x10000 + ord(buffer_list[33])*0x100 \
-			+ ord(buffer_list[32])
+		self.header.e_shoff = buffer_list[35]*0x1000000 \
+			+ buffer_list[34]*0x10000 + buffer_list[33]*0x100 \
+			+ buffer_list[32]
 
 
 		'''
@@ -462,9 +461,9 @@ class ElfParser:
 		Flag names take the form EF_`machine_flag'. Currently no flags have
 		been defined.
 		'''
-		self.header.e_flags = ord(buffer_list[39])*0x1000000 \
-			+ ord(buffer_list[38])*0x10000 + ord(buffer_list[37])*0x100 \
-			+ ord(buffer_list[36])
+		self.header.e_flags = buffer_list[39]*0x1000000 \
+			+ buffer_list[38]*0x10000 + buffer_list[37]*0x100 \
+			+ buffer_list[36]
 
 
 		'''
@@ -472,8 +471,8 @@ class ElfParser:
 
 		This member holds the ELF header's size in bytes.
 		'''
-		self.header.e_ehsize = ord(buffer_list[41])*0x100 \
-			+ ord(buffer_list[40])
+		self.header.e_ehsize = buffer_list[41]*0x100 \
+			+ buffer_list[40]
 
 
 		'''
@@ -482,8 +481,8 @@ class ElfParser:
 		This member holds the size in bytes of one entry in the file's
 		program header table; all entries are the same size.
 		'''
-		self.header.e_phentsize = ord(buffer_list[43])*0x100 \
-			+ ord(buffer_list[42])
+		self.header.e_phentsize = buffer_list[43]*0x100 \
+			+ buffer_list[42]
 
 
 		'''
@@ -505,7 +504,7 @@ class ElfParser:
 		have, specifying where the actual number of program headers
 		is assigned.
 		'''
-		self.header.e_phnum = ord(buffer_list[45])*0x100 + ord(buffer_list[44])
+		self.header.e_phnum = buffer_list[45]*0x100 + buffer_list[44]
 
 
 		'''
@@ -515,8 +514,8 @@ class ElfParser:
 		header is one entry in the section  header  table;  all
 		entries are the same size.
 		'''
-		self.header.e_shentsize = ord(buffer_list[47])*0x100 \
-			+ ord(buffer_list[46])
+		self.header.e_shentsize = buffer_list[47]*0x100 \
+			+ buffer_list[46]
 
 
 		'''
@@ -535,7 +534,7 @@ class ElfParser:
 		the initial entry in the section  header  table  holds
 		the value zero.
 		'''
-		self.header.e_shnum = ord(buffer_list[49])*0x100 + ord(buffer_list[48])
+		self.header.e_shnum = buffer_list[49]*0x100 + buffer_list[48]
 
 
 		'''
@@ -554,8 +553,8 @@ class ElfParser:
 		member of the initial entry in section header table contains
 		the value zero.
 		'''
-		self.header.e_shstrndx = ord(buffer_list[51])*0x100 \
-			+ ord(buffer_list[50])
+		self.header.e_shstrndx = buffer_list[51]*0x100 \
+			+ buffer_list[50]
 
 
 		###############################################
@@ -571,21 +570,21 @@ class ElfParser:
 		EI_MAG3     The fourth byte of the magic number. It must be
 			filled with ELFMAG3. ('F')
 		'''
-		if not (self.header.e_ident[0] == chr(0x7f)
-			and self.header.e_ident[1] == 'E'
-			and self.header.e_ident[2] == 'L'
-			and self.header.e_ident[3] == 'F'):
+		if not (self.header.e_ident[0] == 0x7f
+			and self.header.e_ident[1] == ord('E')
+			and self.header.e_ident[2] == ord('L')
+			and self.header.e_ident[3] == ord('F')):
 			raise NotImplementedError("First 4 bytes do not have magic value")
 
 
 		'''
 		The fifth byte identifies the architecture for this binary
 		'''
-		if ord(self.header.e_ident[4]) == ElfN_Ehdr.EI_CLASS.ELFCLASSNONE:
+		if self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASSNONE:
 			raise NotImplementedError("ELFCLASSNONE: This class is invalid.")
-		elif ord(self.header.e_ident[4]) == ElfN_Ehdr.EI_CLASS.ELFCLASS64:
+		elif self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASS64:
 			raise NotImplementedError("ELFCLASS64: Not yet supported.")
-		elif ord(self.header.e_ident[4]) != ElfN_Ehdr.EI_CLASS.ELFCLASS32:
+		elif self.header.e_ident[4] != ElfN_Ehdr.EI_CLASS.ELFCLASS32:
 			raise NotImplementedError("This class is invalid.")
 
 
@@ -593,20 +592,20 @@ class ElfParser:
 		The sixth byte specifies the data encoding of the
 		processor-specific data in the file.
 		'''
-		if ord(self.header.e_ident[5]) == ElfN_Ehdr.EI_DATA.ELFDATANONE:
+		if self.header.e_ident[5] == ElfN_Ehdr.EI_DATA.ELFDATANONE:
 			raise NotImplementedError("ELFDATANONE: Unknown data format.")
-		elif ord(self.header.e_ident[5]) == ElfN_Ehdr.EI_DATA.ELFDATA2MSB:
+		elif self.header.e_ident[5] == ElfN_Ehdr.EI_DATA.ELFDATA2MSB:
 			raise NotImplementedError("ELFDATA2MSB: Not yet supported.")
-		elif ord(self.header.e_ident[5]) != ElfN_Ehdr.EI_DATA.ELFDATA2LSB:
+		elif self.header.e_ident[5] != ElfN_Ehdr.EI_DATA.ELFDATA2LSB:
 			raise NotImplementedError("Unknown data format.")
 
 
 		'''
 		The version number of the ELF specification
 		'''
-		if ord(self.header.e_ident[6]) == ElfN_Ehdr.EI_VERSION.EV_NONE:
+		if self.header.e_ident[6] == ElfN_Ehdr.EI_VERSION.EV_NONE:
 			raise NotImplementedError("EV_NONE: Invalid version.")
-		elif ord(self.header.e_ident[6]) != ElfN_Ehdr.EI_VERSION.EV_CURRENT:
+		elif self.header.e_ident[6] != ElfN_Ehdr.EI_VERSION.EV_CURRENT:
 			raise NotImplementedError("Invalid version.")
 
 
@@ -617,10 +616,9 @@ class ElfParser:
 		interpretation  of  those fields is determined by the value of
 		this byte.
 		'''
-		if not (ord(
-			self.header.e_ident[7]) == ElfN_Ehdr.EI_OSABI.ELFOSABI_NONE
-			or ord(
-			self.header.e_ident[7]) == ElfN_Ehdr.EI_OSABI.ELFOSABI_LINUX):
+		if not (self.header.e_ident[7] == ElfN_Ehdr.EI_OSABI.ELFOSABI_NONE
+			or
+			self.header.e_ident[7] == ElfN_Ehdr.EI_OSABI.ELFOSABI_LINUX):
 			raise NotImplementedError("EI_OSABI not yet supported")
 
 
@@ -631,7 +629,7 @@ class ElfParser:
 		dependent on the ABI identified by the EI_OSABI field. Applications
 		conforming to this specification use the value 0.
 		'''
-		if ord(self.header.e_ident[8]) != 0:
+		if self.header.e_ident[8] != 0:
 			raise NotImplementedError("EI_ABIVERSION not yet supported")
 
 
@@ -704,28 +702,28 @@ class ElfParser:
 			index into the section header string table section,  giving the
 			location of a null-terminated string.
 			'''
-			tempSectionEntry.sh_name = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 3])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 2])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 1])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 0])
+			tempSectionEntry.sh_name = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 3]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 2]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 1]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 0]
 
 			'''
 			uint32_t   sh_type;
 
 			This member categorizes the section's contents and semantics.
 			'''
-			tempSectionEntry.sh_type = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 7])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 6])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 5])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 4])
+			tempSectionEntry.sh_type = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 7]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 6]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 5]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 4]
 
 			'''
 			uint32_t   sh_flags;
@@ -736,14 +734,14 @@ class ElfParser:
 			does not apply.  Undefined attributes are set to zero.
 			'''
 			# for 32 bit systems only
-			tempSectionEntry.sh_flags = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 11])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 10])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 9])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 8])
+			tempSectionEntry.sh_flags = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 11]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 10]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 9]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 8]
 
 			'''
 			Elf32_Addr sh_addr;
@@ -753,14 +751,14 @@ class ElfParser:
 			should reside.  Otherwise, the member contains zero.
 			'''
 			# for 32 bit systems only
-			tempSectionEntry.sh_addr = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 15])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 14])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 13])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 12])
+			tempSectionEntry.sh_addr = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 15]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 14]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 13]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 12]
 
 			'''
 			Elf32_Off  sh_offset;
@@ -771,14 +769,14 @@ class ElfParser:
 			sh_offset member locates the conceptual placement in the file.
 			'''
 			# for 32 bit systems only
-			tempSectionEntry.sh_offset = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 19])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 18])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 17])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 16])
+			tempSectionEntry.sh_offset = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 19]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 18]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 17]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 16]
 
 			'''
 			uint32_t   sh_size;
@@ -789,14 +787,14 @@ class ElfParser:
 			size, but it occupies no space in the file.
 			'''
 			# for 32 bit systems only
-			tempSectionEntry.sh_size = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 23])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 22])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 21])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 20])
+			tempSectionEntry.sh_size = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 23]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 22]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 21]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 20]
 
 			'''
 			uint32_t   sh_link;
@@ -804,14 +802,14 @@ class ElfParser:
 			This member holds a section header table index link, whose
 			interpretation depends on the section type.
 			'''
-			tempSectionEntry.sh_link = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 27])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 26])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 25])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 24])
+			tempSectionEntry.sh_link = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 27]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 26]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 25]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 24]
 
 			'''
 			uint32_t   sh_info;
@@ -819,14 +817,14 @@ class ElfParser:
 			This member holds extra information, whose interpretation
 			depends on the section type.
 			'''
-			tempSectionEntry.sh_info = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 31])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 30])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 29])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 28])
+			tempSectionEntry.sh_info = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 31]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 30]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 29]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 28]
 
 			'''
 			uint32_t   sh_addralign;
@@ -841,14 +839,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSectionEntry.sh_addralign = \
-				ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 35])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 34])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 33])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 32])
+				buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 35]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 34]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 33]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 32]
 
 			'''
 			uint32_t   sh_entsize;
@@ -859,14 +857,14 @@ class ElfParser:
 			the section does not hold a table of fixed-size entries.
 			'''
 			# for 32 bit systems only
-			tempSectionEntry.sh_entsize = ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 39])*0x1000000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 38])*0x10000 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 37])*0x100 \
-				+ ord(buffer_list[self.header.e_shoff \
-				+ i*self.header.e_shentsize + 36])
+			tempSectionEntry.sh_entsize = buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 39]*0x1000000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 38]*0x10000 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 37]*0x100 \
+				+ buffer_list[self.header.e_shoff \
+				+ i*self.header.e_shentsize + 36]
 
 			# create new section and add to sections list
 			section = Section()
@@ -889,7 +887,7 @@ class ElfParser:
 			for i in range(
 				self.sections[self.header.e_shstrndx].elfN_shdr.sh_size):
 				stringtable_str += \
-					buffer_list[self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + i]
+					chr(buffer_list[self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + i])
 
 			# get name from string table for each section
 			for i in range(len(self.sections)):
@@ -949,14 +947,14 @@ class ElfParser:
 			element's information.
 			'''
 			tempSegment.elfN_Phdr.p_type = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 3])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 2])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 1])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 0])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 3]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 2]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 1]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 0]
 
 			'''
 			Elf32_Off  p_offset;
@@ -966,14 +964,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_offset = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 7])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 6])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 5])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 4])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 7]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 6]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 5]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 4]
 
 			'''
 			Elf32_Addr p_vaddr;
@@ -983,14 +981,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_vaddr = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 11])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 10])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 9])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 8])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 11]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 10]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 9]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 8]
 
 			'''
 			Elf32_Addr p_paddr;
@@ -1001,14 +999,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_paddr = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 15])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 14])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 13])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 12])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 15]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 14]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 13]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 12]
 
 			'''
 			uint32_t   p_filesz;
@@ -1018,14 +1016,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_filesz = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 19])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 18])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 17])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 16])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 19]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 18]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 17]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 16]
 
 			'''
 			uint32_t   p_memsz;
@@ -1035,14 +1033,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_memsz = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 23])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 22])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 21])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 20])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 23]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 22]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 21]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 20]
 
 			'''
 			uint32_t   p_flags;
@@ -1058,14 +1056,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_flags = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 27])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 26])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 25])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 24])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 27]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 26]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 25]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 24]
 
 			'''
 			uint32_t   p_align;
@@ -1080,14 +1078,14 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			tempSegment.elfN_Phdr.p_align = \
-				ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 31])*0x1000000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 30])*0x10000 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 29])*0x100 \
-				+ ord(buffer_list[self.header.e_phoff \
-				+ i*self.header.e_phentsize + 28])
+				buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 31]*0x1000000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 30]*0x10000 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 29]*0x100 \
+				+ buffer_list[self.header.e_phoff \
+				+ i*self.header.e_phentsize + 28]
 
 			# check which sections are in the current segment
 			# (in memory) and add them
@@ -1164,13 +1162,13 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			dynSegmentEntry.d_tag = \
-				(ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 3 + i*8]) \
+				(self.data[dynamicSegment.elfN_Phdr.p_offset + 3 + i*8] \
 				<< 24) \
-				+ (ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 2 \
-				+ i*8]) << 16) \
-				+ (ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 1 \
-				+ i*8]) << 8) \
-				+ ord(self.data[dynamicSegment.elfN_Phdr.p_offset + i*8])
+				+ (self.data[dynamicSegment.elfN_Phdr.p_offset + 2 \
+				+ i*8] << 16) \
+				+ (self.data[dynamicSegment.elfN_Phdr.p_offset + 1 \
+				+ i*8] << 8) \
+				+ self.data[dynamicSegment.elfN_Phdr.p_offset + i*8]
 
 			'''
 			union {
@@ -1180,13 +1178,13 @@ class ElfParser:
 			'''
 			# for 32 bit systems only
 			dynSegmentEntry.d_un = \
-				(ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 7 + i*8]) \
+				(self.data[dynamicSegment.elfN_Phdr.p_offset + 7 + i*8] \
 				<< 24) \
-				+ (ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 6 + \
-				i*8]) << 16) \
-				+ (ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 5 + \
-				i*8]) << 8) \
-				+ ord(self.data[dynamicSegment.elfN_Phdr.p_offset + 4 + i*8])
+				+ (self.data[dynamicSegment.elfN_Phdr.p_offset + 6 + \
+				i*8] << 16) \
+				+ (self.data[dynamicSegment.elfN_Phdr.p_offset + 5 + \
+				i*8] << 8) \
+				+ self.data[dynamicSegment.elfN_Phdr.p_offset + 4 + i*8]
 
 			# add dynamic segment entry to list
 			self.dynamicSegmentEntries.append(dynSegmentEntry)
@@ -1396,25 +1394,25 @@ class ElfParser:
 				# => r_offset holds a virtual address
 				# for 32 bit systems only
 				jmpRelEntry.r_offset = \
-					(ord(self.data[jmpRelOffset + (i*relEntrySize) + 3]) \
+					(self.data[jmpRelOffset + (i*relEntrySize) + 3] \
 					<< 24) \
-					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 2]) \
+					+ (self.data[jmpRelOffset + (i*relEntrySize) + 2] \
 					<< 16) \
-					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 1]) \
-					<< 8) + ord(self.data[jmpRelOffset + (i*relEntrySize)])
+					+ (self.data[jmpRelOffset + (i*relEntrySize) + 1] \
+					<< 8) + self.data[jmpRelOffset + (i*relEntrySize)]
 
 				'''
 				Elf32_Word    r_info;
 				'''
 				# for 32 bit systems only
 				jmpRelEntry.r_info = \
-					(ord(self.data[jmpRelOffset + (i*relEntrySize) + 7]) \
+					(self.data[jmpRelOffset + (i*relEntrySize) + 7] \
 					<< 24) \
-					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 6]) \
+					+ (self.data[jmpRelOffset + (i*relEntrySize) + 6] \
 					<< 16) \
-					+ (ord(self.data[jmpRelOffset + (i*relEntrySize) + 5]) \
+					+ (self.data[jmpRelOffset + (i*relEntrySize) + 5] \
 					<< 8) \
-					+ ord(self.data[jmpRelOffset + (i*relEntrySize) + 4])
+					+ self.data[jmpRelOffset + (i*relEntrySize) + 4]
 
 				# for 32 bit systems only
 				# calculated: "(unsigned char)r_info" or just "r_info & 0xFF"
@@ -1475,26 +1473,26 @@ class ElfParser:
 				# => r_offset holds a virtual address
 				# for 32 bit systems only
 				relEntry.r_offset = \
-					(ord(self.data[relOffset + (i*relEntrySize) + 3]) \
+					(self.data[relOffset + (i*relEntrySize) + 3] \
 					<< 24) \
-					+ (ord(self.data[relOffset + (i*relEntrySize) + 2]) \
+					+ (self.data[relOffset + (i*relEntrySize) + 2] \
 					<< 16) \
-					+ (ord(self.data[relOffset + (i*relEntrySize) + 1]) \
+					+ (self.data[relOffset + (i*relEntrySize) + 1] \
 					<< 8) \
-					+ ord(self.data[relOffset + (i*relEntrySize)])
+					+ self.data[relOffset + (i*relEntrySize)]
 
 				'''
 				Elf32_Word    r_info;
 				'''
 				# for 32 bit systems only
 				relEntry.r_info = \
-					(ord(self.data[relOffset + (i*relEntrySize) + 7]) \
+					(self.data[relOffset + (i*relEntrySize) + 7] \
 					<< 24) \
-					+ (ord(self.data[relOffset + (i*relEntrySize) + 6]) \
+					+ (self.data[relOffset + (i*relEntrySize) + 6] \
 					<< 16) \
-					+ (ord(self.data[relOffset + (i*relEntrySize) + 5]) \
+					+ (self.data[relOffset + (i*relEntrySize) + 5] \
 					<< 8) \
-					+ ord(self.data[relOffset + (i*relEntrySize) + 4])
+					+ self.data[relOffset + (i*relEntrySize) + 4]
 
 				# for 32 bit systems only
 				# calculated: "(unsigned char)r_info" or just "r_info & 0xFF"
@@ -1550,7 +1548,7 @@ class ElfParser:
 		print "ELF header:"
 		print "Type: %s" % ElfN_Ehdr.E_type.reverse_lookup[self.header.e_type]
 		print "Version: %s" \
-			% ElfN_Ehdr.EI_VERSION.reverse_lookup[ord(self.header.e_ident[6])]
+			% ElfN_Ehdr.EI_VERSION.reverse_lookup[self.header.e_ident[6]]
 		print "Machine: %s" \
 			% ElfN_Ehdr.E_machine.reverse_lookup[self.header.e_machine]
 		print "Entry point address: 0x%x" % self.header.e_entry
@@ -1663,7 +1661,7 @@ class ElfParser:
 			if segment.elfN_Phdr.p_type == P_type.PT_INTERP:
 				temp = ""
 				for i in range(segment.elfN_Phdr.p_filesz):
-					temp += self.data[segment.elfN_Phdr.p_offset + i]
+					temp += chr(self.data[segment.elfN_Phdr.p_offset + i])
 				print "Interpreter: %s" % temp
 
 			print
@@ -1715,9 +1713,9 @@ class ElfParser:
 				temp = ""
 				for i in range(
 					(stringTableOffset + stringTableSize - entry.d_un)):
-					if self.data[stringTableOffset + entry.d_un + i] == "\x00":
+					if self.data[stringTableOffset + entry.d_un + i] == 0x00:
 						break
-					temp += self.data[stringTableOffset + entry.d_un + i]
+					temp += chr(self.data[stringTableOffset + entry.d_un + i])
 				print "Name/Value: 0x%x (%d) (%s)" \
 					% (entry.d_un, entry.d_un, temp)
 			else:
@@ -1895,7 +1893,7 @@ class ElfParser:
 				+ "File was not completely parsed before.")
 
 		# copy binary data to new list
-		newfile = list(self.data)
+		newfile = self.data[:]
 
 		# ------
 
@@ -2604,7 +2602,7 @@ class ElfParser:
 				+ "File was not completely parsed before.")
 
 		f = open(filename, "w")
-		f.write("".join(self.generateElf()))
+		f.write(self.generateElf())
 		f.close()
 
 
@@ -3236,13 +3234,13 @@ class ElfParser:
 		entryOffset = self.virtualMemoryAddrToFileOffset(
 			entryToModify.r_offset)
 
-		return ((ord(self.data[entryOffset + 3]) \
+		return ((self.data[entryOffset + 3] \
 			<< 24) \
-			+ (ord(self.data[entryOffset + 2]) \
+			+ (self.data[entryOffset + 2] \
 			<< 16) \
-			+ (ord(self.data[entryOffset + 1]) \
+			+ (self.data[entryOffset + 1] \
 			<< 8) \
-			+ ord(self.data[entryOffset]))
+			+ self.data[entryOffset])
 
 
 	# this function gets the memory address of the got
