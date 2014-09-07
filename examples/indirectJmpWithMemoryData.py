@@ -30,10 +30,7 @@ print "Free space: %d Bytes " % freeSpace
 originalEntry = test.header.e_entry
 
 
-dummyData = list()
-for i in range(freeSpace-1):
-	#dummyData.append("\x00")
-	dummyData.append("\x41")
+dummyData = ["\x41"] * (freeSpace-1)
 
 manipulatedSegment, newDataOffset, newDataMemoryAddr \
 	= test.appendDataToExecutableSegment(dummyData)
@@ -63,9 +60,8 @@ first 28 bytes of "ls" entrypoint
 copiedBytesFromEntry = 8
 
 entryPointOffset = test.virtualMemoryAddrToFileOffset(originalEntry)
-entryPointData = list()
-for i in range(copiedBytesFromEntry):
-	entryPointData.append(test.data[entryPointOffset + i])
+entryPointOffsetEnd = entryPointOffset + copiedBytesFromEntry
+entryPointData = test.data[entryPointOffset:entryPointOffsetEnd]
 
 
 testData = list()
@@ -79,8 +75,7 @@ testData.append((chr(((newDataMemoryAddr+4) >> 24) & 0xff)))
 
 # copy original entrypoint data (these instructions are executed
 # first when control flow is altered)
-for i in range(len(entryPointData)):
-	testData.append(entryPointData[i])
+testData += entryPointData
 
 # calculate relative jump from current position to
 # entrypoint + copiedBytesFromEntry
@@ -112,9 +107,7 @@ hookData.append("\xFF")
 hookData.append("\xE1")
 
 # fill rest of missing data with nops
-while len(hookData) < copiedBytesFromEntry:
-	# nop
-	hookData.append("\x90")
+hookData += ["\x90"] * (copiedBytesFromEntry - len(hookData))
 
 
 test.writeDataToFileOffset(entryPointOffset, hookData)
