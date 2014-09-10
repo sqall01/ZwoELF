@@ -2336,6 +2336,7 @@ class ElfParser:
 		# check if DT_JMPREL entry exists (it is optional
 		# for ELF executables/shared objects)
 		# => write jump relocation entries back
+		dynSymSet = set(self.dynamicSymbolEntries)
 		if jmpRelOffset is not None:
 			for i in range(len(self.jumpRelocationEntries)):
 				'''
@@ -2375,7 +2376,7 @@ class ElfParser:
 				# if not => write dynamic symbol back
 				jmpRelEntry = self.jumpRelocationEntries[i]
 				dynSym = jmpRelEntry.symbol
-				if (dynSym not in self.dynamicSymbolEntries
+				if (dynSym not in dynSymSet
 					and symbolTableOffset is not None):
 
 					symbol = dynSym.ElfN_Sym
@@ -2495,7 +2496,7 @@ class ElfParser:
 				# if not => write dynamic symbol back
 				relEntry = self.relocationEntries[i]
 				dynSym = relEntry.symbol
-				if (dynSym not in self.dynamicSymbolEntries
+				if (dynSym not in dynSymSet
 					and symbolTableOffset is not None):
 
 					symbol = dynSym.ElfN_Sym
