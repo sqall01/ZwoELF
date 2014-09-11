@@ -8,6 +8,7 @@
 # Licensed under the GNU Public License, version 2.
 
 import binascii
+import struct
 import sys
 import hashlib
 from Elf import ElfN_Ehdr, Shstrndx, Elf32_Shdr, SH_flags, SH_type, \
@@ -63,133 +64,28 @@ class ElfParser:
 	# this function converts a section header entry to a list of data
 	# return values: (bytearray) converted section header entry
 	def sectionHeaderEntryToBytearray(self, sectionHeaderEntryToWrite):
-		sectionHeaderEntryList = bytearray()
-
-		'''
-		uint32_t   sh_name;
-		'''
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_name & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_name >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_name >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_name >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_type;
-		'''
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_type & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_type >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_type >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_type >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_flags;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_flags & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_flags >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_flags >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_flags >> 24) & 0xff))
-
-		'''
-		Elf32_Addr sh_addr;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_addr & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addr >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addr >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addr >> 24) & 0xff))
-
-		'''
-		Elf32_Off  sh_offset;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_offset & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_offset >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_offset >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_offset >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_size;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_size & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_size >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_size >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_size >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_link;
-		'''
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_link & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_link >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_link >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_link >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_info;
-		'''
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_info & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_info >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_info >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_info >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_addralign;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_addralign & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addralign >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addralign >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_addralign >> 24) & 0xff))
-
-		'''
-		uint32_t   sh_entsize;
-		'''
-		# for 32 bit systems only
-		sectionHeaderEntryList.append(
-			chr(sectionHeaderEntryToWrite.sh_entsize & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_entsize >> 8) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_entsize >> 16) & 0xff))
-		sectionHeaderEntryList.append(
-			chr((sectionHeaderEntryToWrite.sh_entsize >> 24) & 0xff))
+		sectionHeaderEntryList = bytearray(struct.pack("<IIIIIIIIII",
+			# uint32_t   sh_name;
+			sectionHeaderEntryToWrite.sh_name,
+			# uint32_t   sh_type;
+			sectionHeaderEntryToWrite.sh_type,
+			# uint32_t   sh_flags;     (32 bit only!)
+			sectionHeaderEntryToWrite.sh_flags,
+			# Elf32_Addr sh_addr;      (32 bit only!)
+			sectionHeaderEntryToWrite.sh_addr,
+			# Elf32_Off  sh_offset;    (32 bit only!)
+			sectionHeaderEntryToWrite.sh_offset,
+			# uint32_t   sh_size;      (32 bit only!)
+			sectionHeaderEntryToWrite.sh_size,
+			# uint32_t   sh_link;
+			sectionHeaderEntryToWrite.sh_link,
+			# uint32_t   sh_info;
+			sectionHeaderEntryToWrite.sh_info,
+			# uint32_t   sh_addralign; (32 bit only!)
+			sectionHeaderEntryToWrite.sh_addralign,
+			# uint32_t   sh_entsize;   (32 bit only!)
+			sectionHeaderEntryToWrite.sh_entsize,
+		))
 
 		return sectionHeaderEntryList
 
