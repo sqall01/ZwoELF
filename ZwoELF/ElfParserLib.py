@@ -2489,11 +2489,7 @@ class ElfParser:
 
 		# generate list with new memory address for got
 		# for 32 bit systems only
-		newGotAddr = list()
-		newGotAddr.append(chr((memoryAddr & 0xff)))
-		newGotAddr.append((chr((memoryAddr >> 8) & 0xff)))
-		newGotAddr.append((chr((memoryAddr >> 16) & 0xff)))
-		newGotAddr.append((chr((memoryAddr >> 24) & 0xff)))
+		newGotAddr = struct.pack('<I', memoryAddr)
 
 		# overwrite old offset
 		self.writeDataToFileOffset(entryOffset, newGotAddr)
@@ -2523,13 +2519,7 @@ class ElfParser:
 		entryOffset = self.virtualMemoryAddrToFileOffset(
 			entryToModify.r_offset)
 
-		return ((self.data[entryOffset + 3] \
-			<< 24) \
-			+ (self.data[entryOffset + 2] \
-			<< 16) \
-			+ (self.data[entryOffset + 1] \
-			<< 8) \
-			+ self.data[entryOffset])
+		return struct.unpack('<I', self.data[entryOffset:entryOffset+4])[0]
 
 
 	# this function gets the memory address of the got
