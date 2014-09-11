@@ -1585,8 +1585,8 @@ class ElfParser:
 		writePosition = self.header.e_shoff
 
 		# fill list with null until writePosition is reached
-		while writePosition > len(newfile):
-			newfile.append("\x00")
+		if len(newfile) < writePosition:
+			newfile.extend(bytearray(writePosition - len(newfile)))
 
 		# write section header table back
 		for section in self.sections:
@@ -1605,26 +1605,13 @@ class ElfParser:
 					+ section.elfN_shdr.sh_name
 
 				# fill list with null until writePosition is reached
-				while writePosition > len(newfile):
-					newfile.append("\x00")
+				if len(newfile) < writePosition:
+					newfile.extend(bytearray(writePosition - len(newfile)))
 
 				# write name of all sections into string table
-				for i in range(len(section.sectionName)):
-					# as long as writePosition is not larger
-					# or equal to the length of the newfile list
-					# => overwrite old data
-					# if it is => append data
-					if writePosition < len(newfile):
-						newfile[writePosition] = section.sectionName[i]
-					else:
-						newfile.append(section.sectionName[i])
-					writePosition += 1
-
-				# append null byte (all written strings are null-terminated)
-				if writePosition < len(newfile):
-					newfile[writePosition] = "\x00"
-				else:
-					newfile.append("\x00")
+				data = bytearray(section.sectionName) + b'\x00'
+				newfile[writePosition:writePosition+len(data)] = data
+				writePosition += len(data)
 
 		# ------
 
@@ -1667,9 +1654,9 @@ class ElfParser:
 
 			# add placeholder bytes to new file when the bytes do not already
 			# exist in the new file until size of header entry fits
-			while (self.header.e_phoff + (i*self.header.e_phentsize)
-				+ self.header.e_phentsize) > len(newfile):
-				newfile.append("\x00")
+			requiredSize = self.header.e_phoff + ((i+1) * self.header.e_phentsize)
+			if len(newfile) < requiredSize:
+				newfile.extend(bytearray(requiredSize - len(newfile)))
 
 			tempOffset = self.header.e_phoff + i*self.header.e_phentsize
 			newfile[tempOffset:tempOffset+32] = struct.pack('<IIIIIIII',
