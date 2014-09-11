@@ -170,59 +170,20 @@ class ElfParser:
 		tempSymbol = DynamicSymbol()
 
 		# get values from the symbol table
-		'''
-		Elf32_Word		st_name;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_name = \
-			(self.data[offset + 3] \
-			<< 24) \
-			+ (self.data[offset + 2] \
-			<< 16) \
-			+ (self.data[offset + 1] \
-			<< 8) \
-			+ self.data[offset]
-
-		'''
-		Elf32_Addr		st_value;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_value = \
-			(self.data[offset + 7] << 24) \
-			+ (self.data[offset + 6] << 16) \
-			+ (self.data[offset + 5] << 8) \
-			+ self.data[offset + 4]
-
-		'''
-		Elf32_Word		st_size;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_size = \
-			(self.data[offset + 11] << 24) \
-			+ (self.data[offset + 10] << 16) \
-			+ (self.data[offset + 9] << 8) \
-			+ self.data[offset + 8]
-
-		'''
-		unsigned char	st_info;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_info = self.data[offset + 12]
-
-		'''
-		unsigned char	st_other;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_other = self.data[offset + 13]
-
-		'''
-		Elf32_Half		st_shndx;
-		'''
-		# for 32 bit systems only
-		tempSymbol.ElfN_Sym.st_shndx = \
-			(self.data[offset + 15] \
-			<< 8) \
-			+ self.data[offset + 14]
+		(
+			# Elf32_Word        st_name;    (32 bit only!)
+			tempSymbol.ElfN_Sym.st_name,
+			# Elf32_Addr        st_value;   (32 bit only!)
+			tempSymbol.ElfN_Sym.st_value,
+			# Elf32_Word        st_size;    (32 bit only!)
+			tempSymbol.ElfN_Sym.st_size,
+			# unsigned char     st_info;    (32 bit only!)
+			tempSymbol.ElfN_Sym.st_info,
+			# unsigned char     st_other;   (32 bit only!)
+			tempSymbol.ElfN_Sym.st_other,
+			# Elf32_Half        st_shndx;   (32 bit only!)
+			tempSymbol.ElfN_Sym.st_shndx,
+		) = struct.unpack_from('<IIIBBH', self.data, offset=offset)
 
 		# extract name from the string table
 		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
