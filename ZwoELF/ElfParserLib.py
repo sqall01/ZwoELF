@@ -660,8 +660,8 @@ class ElfParser:
 		# empty section string table => sh_size of string table section = 0
 		# => Non-zero indexes to string table are invalid
 
-		# check if sections exists => read whole string table
-		if self.sections != list():
+		# list of sections not empty => read whole string table
+		if self.sections:
 			stringtable_str = ""
 			for i in range(
 				self.sections[self.header.e_shstrndx].elfN_shdr.sh_size):

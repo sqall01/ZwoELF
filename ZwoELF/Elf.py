@@ -198,9 +198,7 @@ class ElfN_Ehdr:
 	} ElfN_Ehdr;
 	'''
 	def __init__(self):
-		self.e_ident = list()
-		for i in range(16):
-			self.e_ident.append("\x00")
+		self.e_ident = bytearray(16)
 		self.e_type = None
 		self.e_machine = None
 		self.e_version = None
