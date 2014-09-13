@@ -40,8 +40,8 @@ class ElfParser:
 		# parse ELF file
 		self.parseElf(self.data, onlyParseHeader=onlyParseHeader)
 
-		# check if file was completely parsed
-		if self.fileParsed is True:
+		# check if parsed ELF file and new generated one are the same
+		if self.fileParsed is True and force is False:
 			# generate md5 hash of file that was parsed
 			tempHash = hashlib.md5()
 			tempHash.update(self.data)
@@ -52,8 +52,7 @@ class ElfParser:
 			tempHash.update(self.generateElf())
 			newFileHash = tempHash.digest()
 
-			# check if parsed ELF file and new generated one are the same
-			if oldFileHash != newFileHash and force is False:
+			if oldFileHash != newFileHash:
 				raise NotImplementedError('Not able to parse and ' \
 					+ 're-generate ELF file correctly. This can happen '\
 					+ 'when the ELF file is parsed out of an other file '\
