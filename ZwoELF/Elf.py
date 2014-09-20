@@ -373,7 +373,8 @@ class SH_type:
 		0x8: "SHT_NOBITS", 0x9: "SHT_REL", 0xA: "SHT_SHLIB",
 		0xB: "SHT_DYNSYM", 0x70000000: "SHT_LOPROC",
 		0x7fffffff: "SHT_HIPROC", 0x80000000: "SHT_LOUSER",
-		0xffffffff: "SHT_HIUSER"}
+		0xffffffff: "SHT_HIUSER", 0x6fffffff: "SHT_VERSYM",
+		0x6ffffffe: "SHT_VERNEED"}
 	SHT_NULL = 0x0
 	SHT_PROGBITS = 0x1
 	SHT_SYMTAB = 0x2
@@ -390,6 +391,8 @@ class SH_type:
 	SHT_HIPROC = 0x7fffffff
 	SHT_LOUSER = 0x80000000
 	SHT_HIUSER = 0xffffffff
+	SHT_VERSYM = 0x6fffffff
+	SHT_VERNEED = 0x6ffffffe
 
 
 class Elf32_Phdr:
@@ -466,14 +469,11 @@ class P_type:
 	PT_GNU_STACK GNU extension which is used by the Linux kernel to
 		control the state of the stack via the flags set in  the
 		p_flags member.
-
-	PT_GNU_RELRO (0x6474e552)  Read only after relocation
 	'''
 	reverse_lookup = {0x0: "PT_NULL", 0x1: "PT_LOAD", 0x2: "PT_DYNAMIC",
 		0x3: "PT_INTERP", 0x4: "PT_NOTE", 0x5: "PT_SHLIB",
 		0x6: "PT_PHDR", 0x70000000: "PT_LOPROC",
-		0x7fffffff: "PT_HIPROC", 0x6474E550: "PT_GNU_EH_FRAME",
-		0x6474e551: "PT_GNU_STACK", 0x6474e552: "PT_GNU_RELRO"}
+		0x7fffffff: "PT_HIPROC", 0x6474E550: "PT_GNU_EH_FRAME"}
 	PT_NULL = 0x0
 	PT_LOAD = 0x1
 	PT_DYNAMIC = 0x2
@@ -484,8 +484,6 @@ class P_type:
 	PT_LOPROC = 0x70000000
 	PT_HIPROC = 0x7fffffff
 	PT_GNU_EH_FRAME = 0x6474E550
-	PT_GNU_STACK = 0x6474e551
-	PT_GNU_RELRO = 0x6474e552
 
 
 class P_flags:
