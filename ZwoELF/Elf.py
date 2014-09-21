@@ -371,10 +371,11 @@ class SH_type:
 		0x2: "SHT_SYMTAB", 0x3: "SHT_STRTAB", 0x4: "SHT_RELA",
 		0x5: "SHT_HASH", 0x6: "SHT_DYNAMIC", 0x7: "SHT_NOTE",
 		0x8: "SHT_NOBITS", 0x9: "SHT_REL", 0xA: "SHT_SHLIB",
-		0xB: "SHT_DYNSYM", 0x70000000: "SHT_LOPROC",
+		0xB: "SHT_DYNSYM", 0xe: "SHT_INIT_ARRAY",
+		0xf: "SHT_FINI_ARRAY", 0x6ffffffe: "SHT_VERNEED",
+		0x70000000: "SHT_LOPROC", 0x6fffffff: "SHT_VERSYM",
 		0x7fffffff: "SHT_HIPROC", 0x80000000: "SHT_LOUSER",
-		0xffffffff: "SHT_HIUSER", 0x6fffffff: "SHT_VERSYM",
-		0x6ffffffe: "SHT_VERNEED"}
+		0xffffffff: "SHT_HIUSER"}
 	SHT_NULL = 0x0
 	SHT_PROGBITS = 0x1
 	SHT_SYMTAB = 0x2
@@ -387,12 +388,14 @@ class SH_type:
 	SHT_REL = 0x9
 	SHT_SHLIB = 0xA
 	SHT_DYNSYM = 0xB
+	SHT_INIT_ARRAY = 0xe
+	SHT_FINI_ARRAY = 0xf
+	SHT_VERNEED = 0x6ffffffe
+	SHT_VERSYM = 0x6fffffff
 	SHT_LOPROC = 0x70000000
 	SHT_HIPROC = 0x7fffffff
 	SHT_LOUSER = 0x80000000
 	SHT_HIUSER = 0xffffffff
-	SHT_VERSYM = 0x6fffffff
-	SHT_VERNEED = 0x6ffffffe
 
 
 class Elf32_Phdr:
@@ -553,48 +556,54 @@ class D_tag:
 
 	DT_HIPROC   End of processor-specific semantics
 	'''
-	reverse_lookup = {0: "DT_NULL", 1: "DT_NEEDED", 2: "DT_PLTRELSZ",
-		3: "DT_PLTGOT", 4: "DT_HASH", 5: "DT_STRTAB", 6: "DT_SYMTAB",
-		7: "DT_RELA", 8: "DT_RELASZ", 9: "DT_RELAENT", 10: "DT_STRSZ",
-		11: "DT_SYMENT", 12: "DT_INIT", 13: "DT_FINI", 14: "DT_SONAME",
-		15: "DT_RPATH", 16: "DT_SYMBOLIC", 17: "DT_REL", 18: "DT_RELSZ",
-		19: "DT_RELENT", 20: "DT_PLTREL", 21: "DT_DEBUG", 22: "DT_TEXTREL",
-		23: "DT_JMPREL", 0x70000000: "DT_LOPROC",
-		0x7fffffff: "DT_HIPROC", 0x6ffffef5: "DT_GNU_HASH",
-		0x6ffffffe: "DT_VERNEED", 0x6fffffff: "DT_VERNEEDNUM",
-		0x6ffffff0: "DT_VERSYM"}
-	DT_NULL = 0
-	DT_NEEDED = 1
-	DT_PLTRELSZ = 2
-	DT_PLTGOT = 3
-	DT_HASH = 4
-	DT_STRTAB = 5
-	DT_SYMTAB = 6
-	DT_RELA = 7
-	DT_RELASZ = 8
-	DT_RELAENT = 9
-	DT_STRSZ = 10
-	DT_SYMENT = 11
-	DT_INIT = 12
-	DT_FINI = 13
-	DT_SONAME = 14
-	DT_RPATH = 15
-	DT_SYMBOLIC = 16
-	DT_REL = 17
-	DT_RELSZ = 18
-	DT_RELENT = 19
-	DT_PLTREL = 20
-	DT_DEBUG = 21
-	DT_TEXTREL = 22
-	DT_JMPREL = 23
+	reverse_lookup = {0x0: "DT_NULL", 0x1: "DT_NEEDED", 0x2: "DT_PLTRELSZ",
+		0x3: "DT_PLTGOT", 0x4: "DT_HASH", 0x5: "DT_STRTAB", 0x6: "DT_SYMTAB",
+		0x7: "DT_RELA", 0x8: "DT_RELASZ", 0x9: "DT_RELAENT", 0xa: "DT_STRSZ",
+		0xb: "DT_SYMENT", 0xc: "DT_INIT", 0xd: "DT_FINI", 0xe: "DT_SONAME",
+		0xf: "DT_RPATH", 0x10: "DT_SYMBOLIC", 0x11: "DT_REL", 0x12: "DT_RELSZ",
+		0x13: "DT_RELENT", 0x14: "DT_PLTREL", 0x15: "DT_DEBUG",
+		0x16: "DT_TEXTREL", 0x17: "DT_JMPREL", 0x19: "DT_INIT_ARRAY",
+		0x1a: "DT_FINI_ARRAY", 0x1b: "DT_INIT_ARRAYSZ",
+		0x1c: "DT_FINI_ARRAYSZ", 0x6ffffef5: "DT_GNU_HASH",
+		0x6ffffff0: "DT_VERSYM", 0x6ffffffe: "DT_VERNEED",
+		0x6fffffff: "DT_VERNEEDNUM", 0x70000000: "DT_LOPROC",
+		0x7fffffff: "DT_HIPROC"}
+	DT_NULL = 0x0
+	DT_NEEDED = 0x1
+	DT_PLTRELSZ = 0x2
+	DT_PLTGOT = 0x3
+	DT_HASH = 0x4
+	DT_STRTAB = 0x5
+	DT_SYMTAB = 0x6
+	DT_RELA = 0x7
+	DT_RELASZ = 0x8
+	DT_RELAENT = 0x9
+	DT_STRSZ = 0xa
+	DT_SYMENT = 0xb
+	DT_INIT = 0xc
+	DT_FINI = 0xd
+	DT_SONAME = 0xe
+	DT_RPATH = 0xf
+	DT_SYMBOLIC = 0x10
+	DT_REL = 0x11
+	DT_RELSZ = 0x12
+	DT_RELENT = 0x13
+	DT_PLTREL = 0x14
+	DT_DEBUG = 0x15
+	DT_TEXTREL = 0x16
+	DT_JMPREL = 0x17
+	DT_INIT_ARRAY = 0x19
+	DT_FINI_ARRAY = 0x1a
+	DT_INIT_ARRAYSZ = 0x1b
+	DT_FINI_ARRAYSZ = 0x1c
 	#DT_BIND_NOW
 	#DT_RUNPATH
-	DT_LOPROC = 0x70000000
-	DT_HIPROC = 0x7fffffff
 	DT_GNU_HASH = 0x6ffffef5
+	DT_VERSYM = 0x6ffffff0
 	DT_VERNEED = 0x6ffffffe
 	DT_VERNEEDNUM = 0x6fffffff
-	DT_VERSYM = 0x6ffffff0
+	DT_LOPROC = 0x70000000
+	DT_HIPROC = 0x7fffffff
 
 
 class ElfN_Dyn:
