@@ -182,7 +182,7 @@ class ElfParser:
 			tempSymbol.ElfN_Sym.st_other,
 			# Elf32_Half        st_shndx;   (32 bit only!)
 			tempSymbol.ElfN_Sym.st_shndx,
-		) = struct.unpack_from('<IIIBBH', self.data, offset=offset)
+		) = struct.unpack('<IIIBBH', self.data[offset:offset+16])
 
 		# extract name from the string table
 		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
