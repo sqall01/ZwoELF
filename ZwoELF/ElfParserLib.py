@@ -59,6 +59,13 @@ class ElfParser:
 					+ 'like a core dump. Use "force=True" to ignore this '\
 					+ 'check.')
 
+	# this function interprets the r_info field from ElfN_Rel(a) structs
+	# depending on self.bits
+	def relocationSymIdxAndTypeFromInfo(self, rInfo):
+		rSym = (rInfo >> 8)
+		rType = (rInfo & 0xff)
+		return (rSym, rType)
+
 
 	# this function converts a section header entry to a list of data
 	# return values: (bytearray) converted section header entry
@@ -1093,13 +1100,8 @@ class ElfParser:
 				) = struct.unpack("<II", self.data[tempOffset:tempOffset+8])
 				del tempOffset
 
-				# for 32 bit systems only
-				# calculated: "(unsigned char)r_info" or just "r_info & 0xFF"
-				jmpRelEntry.r_type = (jmpRelEntry.r_info & 0xFF)
-
-				# for 32 bit systems only
-				# calculated: "r_info >> 8"
-				jmpRelEntry.r_sym = (jmpRelEntry.r_info >> 8)
+				(jmpRelEntry.r_sym, jmpRelEntry.r_type) = \
+						self.relocationSymIdxAndTypeFromInfo(jmpRelEntry.r_info)
 
 				# get values from the symbol table
 				tempOffset = symbolTableOffset \
@@ -1159,13 +1161,8 @@ class ElfParser:
 				) = struct.unpack("<II", self.data[tempOffset:tempOffset+8])
 				del tempOffset
 
-				# for 32 bit systems only
-				# calculated: "(unsigned char)r_info" or just "r_info & 0xFF"
-				relEntry.r_type = (relEntry.r_info & 0xFF)
-
-				# for 32 bit systems only
-				# calculated: "r_info >> 8"
-				relEntry.r_sym = (relEntry.r_info >> 8)
+				(relEntry.r_sym, relEntry.r_type) = \
+						self.relocationSymIdxAndTypeFromInfo(relEntry.r_info)
 
 				# get values from the symbol table
 				tempOffset = symbolTableOffset \
