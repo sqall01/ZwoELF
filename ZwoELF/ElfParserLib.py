@@ -2420,9 +2420,9 @@ class ElfParser:
 		# get the segment to which the file offset belongs to
 		foundSegment = None
 		for segment in self.segments:
-			if (offset > segment.elfN_Phdr.p_offset
-				and offset < (segment.elfN_Phdr.p_offset
-				+ segment.elfN_Phdr.p_filesz)):
+			segStart = segment.elfN_Phdr.p_offset
+			segEnd = segStart + segment.elfN_Phdr.p_filesz
+			if segStart <= offset and offset < segEnd:
 				foundSegment = segment
 				break
 
@@ -2430,12 +2430,16 @@ class ElfParser:
 		if foundSegment is None:
 			return None
 
+		relOffset = offset - foundSegment.elfN_Phdr.p_offset
+		# relOffset >= 0 due to condition in segment search loop
+
 		# check if file is mapped 1:1 to memory
 		if foundSegment.elfN_Phdr.p_filesz != foundSegment.elfN_Phdr.p_memsz:
-			raise ValueError("Data not mapped 1:1 from file to memory." \
-				+ " Can not convert virtual memory address to file offset.")
+			if relOffset >= foundSegment.elfN_Phdr.p_memsz:
+				raise ValueError("Data not mapped 1:1 from file to memory." \
+					+ " Can not convert virtual memory address to file offset.")
 
-		return foundSegment.elfN_Phdr.p_vaddr + offset
+		return foundSegment.elfN_Phdr.p_vaddr + relOffset
 
 
 	# this function overwrites an entry in the got
