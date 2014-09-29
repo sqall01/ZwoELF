@@ -2344,32 +2344,27 @@ class ElfParser:
 		# get the segment to which the changed data belongs to
 		segmentToManipulate = None
 		for segment in self.segments:
-			if (offset > segment.elfN_Phdr.p_offset
-				and offset < (segment.elfN_Phdr.p_offset
-				+ segment.elfN_Phdr.p_filesz)):
+			segStart = segment.elfN_Phdr.p_offset
+			segEnd = segStart + segment.elfN_Phdr.p_filesz
+			if segStart <= offset and offset < segEnd:
 				segmentToManipulate = segment
 				break
 
 		# check if segment was found
-		if (segmentToManipulate is None
-			and force is False):
+		if force is False and segmentToManipulate is None:
 			raise ValueError(('Segment with offset 0x%x not found ' \
 				+ '(use "force=True" to ignore this check).') % offset)
 
-		# calculate position of data to manipulate in segment
-		dataPosition = offset - segmentToManipulate.elfN_Phdr.p_offset
-
+		# (previous check ensures that now either force is True or segEnd has been set)
 		# check if data to manipulate fits in segment
-		if (len(data) > (segmentToManipulate.elfN_Phdr.p_filesz - dataPosition)
-			and force is False):
+		if force is False and offset + len(data) >= segEnd:
 			raise ValueError(('Size of data to manipulate: %d. Not enough ' \
 				+ 'space in segment (Available: %d; use "force=True" to ' \
-				+ 'ignore this check).') % (len(data),
-				(segmentToManipulate.elfN_Phdr.p_filesz - offset)))
+				+ 'ignore this check).') \
+				% (len(data), (segEnd - offset)))
 
 		# change data
-		for i in range(len(data)):
-			self.data[offset + i] = data[i]
+		self.data[offset:offset+len(data)] = data
 
 
 	# this function converts the virtual memory address to the file offset
