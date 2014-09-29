@@ -187,11 +187,10 @@ class ElfParser:
 		# extract name from the string table
 		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
 		nMaxEnd = stringTableOffset + stringTableSize
-		try:
-			nEnd = self.data.index('\x00', nStart, nMaxEnd)
-		except ValueError:
-			nEnd = nMaxEnd
-		tempSymbol.symbolName = str(self.data[nStart:nEnd])
+		nEnd = self.data.find('\x00', nStart, nMaxEnd)
+		# use empty string if string is not terminated (nEnd == -1)
+		nEnd = max(nStart, nEnd)
+		tempSymbol.symbolName = bytes(self.data[nStart:nEnd])
 
 		# return dynamic symbol
 		return tempSymbol
@@ -662,11 +661,9 @@ class ElfParser:
 
 		# list of sections not empty => read whole string table
 		if self.sections:
-			stringtable_str = ""
-			for i in range(
-				self.sections[self.header.e_shstrndx].elfN_shdr.sh_size):
-				stringtable_str += \
-					chr(buffer_list[self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset + i])
+			nStart = self.sections[self.header.e_shstrndx].elfN_shdr.sh_offset
+			nEnd = nStart + self.sections[self.header.e_shstrndx].elfN_shdr.sh_size
+			stringtable_str = buffer_list[nStart:nEnd]
 
 			# get name from string table for each section
 			for i in range(len(self.sections)):
@@ -675,13 +672,11 @@ class ElfParser:
 				if len(stringtable_str) == 0:
 					break
 
-				tempName = ""
-				counter = self.sections[i].elfN_shdr.sh_name
-				while (ord(stringtable_str[counter]) != 0
-					and counter < len(stringtable_str)):
-					tempName += stringtable_str[counter]
-					counter += 1
-				self.sections[i].sectionName = tempName
+				nStart = self.sections[i].elfN_shdr.sh_name
+				nEnd = stringtable_str.find('\x00', nStart)
+				# use empty string if string is not terminated (nEnd == -1)
+				nEnd = max(nStart, nEnd)
+				self.sections[i].sectionName = bytes(stringtable_str[nStart:nEnd])
 
 
 		###############################################
@@ -1342,10 +1337,9 @@ class ElfParser:
 			# get interpreter if segment is for interpreter
 			# null-terminated string
 			if segment.elfN_Phdr.p_type == P_type.PT_INTERP:
-				temp = ""
-				for i in range(segment.elfN_Phdr.p_filesz):
-					temp += chr(self.data[segment.elfN_Phdr.p_offset + i])
-				print "Interpreter: %s" % temp
+				nStart = segment.elfN_Phdr.p_offset
+				nEnd = nStart + segment.elfN_Phdr.p_filesz
+				print "Interpreter: %s" % self.data[nStart:nEnd]
 
 			print
 			counter += 1
@@ -1393,12 +1387,11 @@ class ElfParser:
 
 			# check if entry tag equals DT_NEEDED => get library name
 			if entry.d_tag == D_tag.DT_NEEDED:
-				temp = ""
-				for i in range(
-					(stringTableOffset + stringTableSize - entry.d_un)):
-					if self.data[stringTableOffset + entry.d_un + i] == 0x00:
-						break
-					temp += chr(self.data[stringTableOffset + entry.d_un + i])
+				nStart = stringTableOffset + entry.d_un
+				nMaxEnd = stringTableOffset + stringTableSize
+				nEnd = self.data.find('\x00', nStart, nMaxEnd)
+				nEnd = max(nStart, nEnd)
+				temp = bytes(self.data[nStart:nEnd])
 				print "Name/Value: 0x%x (%d) (%s)" \
 					% (entry.d_un, entry.d_un, temp)
 			else:
