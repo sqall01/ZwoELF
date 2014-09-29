@@ -805,10 +805,12 @@ class ElfParser:
 			# check which sections are in the current segment
 			# (in memory) and add them
 			for section in self.sections:
-				if (section.elfN_shdr.sh_addr >= tempSegment.elfN_Phdr.p_vaddr
-					and (section.elfN_shdr.sh_addr + section.elfN_shdr.sh_size)
-					<= (tempSegment.elfN_Phdr.p_vaddr +
-					tempSegment.elfN_Phdr.p_memsz)):
+				segStart = tempSegment.elfN_Phdr.p_vaddr
+				segEnd = segStart + tempSegment.elfN_Phdr.p_memsz
+				sectionStart = section.elfN_shdr.sh_addr
+				sectionEnd = sectionStart + section.elfN_shdr.sh_size
+
+				if segStart <= sectionStart and sectionEnd <= segEnd:
 					tempSegment.sectionsWithin.append(section)
 
 			self.segments.append(tempSegment)
@@ -816,20 +818,23 @@ class ElfParser:
 
 		# get all segments within a segment
 		for outerSegment in self.segments:
-			for segmentWithin in self.segments:
+			if outerSegment.elfN_Phdr.p_type == P_type.PT_GNU_STACK:
+				continue
 
-				# skip if segments are the same
+			for segmentWithin in self.segments:
+				if segmentWithin.elfN_Phdr.p_type == P_type.PT_GNU_STACK:
+					continue
+
 				if segmentWithin == outerSegment:
 					continue
 
-				# check if segmentWithin lies within the outerSegment
-				if (segmentWithin.elfN_Phdr.p_offset
-					> outerSegment.elfN_Phdr.p_offset
-					and (segmentWithin.elfN_Phdr.p_offset
-					+ segmentWithin.elfN_Phdr.p_filesz)
-					< (outerSegment.elfN_Phdr.p_offset
-					+ outerSegment.elfN_Phdr.p_filesz)):
-						outerSegment.segmentsWithin.append(segmentWithin)
+				innerStart = segmentWithin.elfN_Phdr.p_offset
+				innerEnd = innerStart + segmentWithin.elfN_Phdr.p_filesz
+				outerStart = outerSegment.elfN_Phdr.p_offset
+				outerEnd = outerStart + outerSegment.elfN_Phdr.p_filesz
+
+				if outerStart <= innerStart and innerEnd <= outerEnd:
+					outerSegment.segmentsWithin.append(segmentWithin)
 
 
 		###############################################
