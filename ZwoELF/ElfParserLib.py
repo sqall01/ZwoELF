@@ -2384,9 +2384,9 @@ class ElfParser:
 		# get the segment to which the virtual memory address belongs to
 		foundSegment = None
 		for segment in self.segments:
-			if (memoryAddr > segment.elfN_Phdr.p_vaddr
-				and memoryAddr < (segment.elfN_Phdr.p_vaddr
-				+ segment.elfN_Phdr.p_memsz)):
+			segStart = segment.elfN_Phdr.p_vaddr
+			segEnd = segStart + segment.elfN_Phdr.p_memsz
+			if segStart <= memoryAddr and memoryAddr < segEnd:
 				foundSegment = segment
 				break
 
@@ -2394,19 +2394,17 @@ class ElfParser:
 		if foundSegment is None:
 			return None
 
+		relOffset = memoryAddr - foundSegment.elfN_Phdr.p_vaddr
+		# relOffset >= 0 due to condition in segment search loop
+
 		# check if file is mapped 1:1 to memory
 		if foundSegment.elfN_Phdr.p_filesz != foundSegment.elfN_Phdr.p_memsz:
 			# check if the memory address relative to the virtual memory
 			# address of the segment lies within the file size of the segment
-			if ((memoryAddr - segment.elfN_Phdr.p_vaddr) > 0
-				and (memoryAddr - segment.elfN_Phdr.p_vaddr)
-				< foundSegment.elfN_Phdr.p_filesz):
-					pass
-			else:
+			if relOffset >= foundSegment.elfN_Phdr.p_filesz:
 				raise ValueError("Can not convert virtual memory address " \
 					+ "to file offset.")
 
-		relOffset = memoryAddr - foundSegment.elfN_Phdr.p_vaddr
 		return foundSegment.elfN_Phdr.p_offset + relOffset
 
 
