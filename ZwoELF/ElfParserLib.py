@@ -11,7 +11,7 @@ import binascii
 import struct
 import sys
 import hashlib
-from Elf import ElfN_Ehdr, Shstrndx, Elf32_Shdr, SH_flags, SH_type, \
+from Elf import ElfN_Ehdr, Shstrndx, ElfN_Shdr, SH_flags, SH_type, \
 	Elf32_Phdr, P_type, P_flags, D_tag, ElfN_Dyn, ElfN_Rel, ElfN_Sym, R_type, \
 	Section, Segment, DynamicSymbol
 
@@ -68,21 +68,21 @@ class ElfParser:
 			sectionHeaderEntryToWrite.sh_name,
 			# uint32_t   sh_type;
 			sectionHeaderEntryToWrite.sh_type,
-			# uint32_t   sh_flags;     (32 bit only!)
+			# uintN_t    sh_flags;     (N = 32/64)
 			sectionHeaderEntryToWrite.sh_flags,
-			# Elf32_Addr sh_addr;      (32 bit only!)
+			# ElfN_Addr  sh_addr;      (N = 32/64)
 			sectionHeaderEntryToWrite.sh_addr,
-			# Elf32_Off  sh_offset;    (32 bit only!)
+			# ElfN_Off   sh_offset;    (N = 32/64)
 			sectionHeaderEntryToWrite.sh_offset,
-			# uint32_t   sh_size;      (32 bit only!)
+			# uintN_t    sh_size;      (N = 32/64)
 			sectionHeaderEntryToWrite.sh_size,
 			# uint32_t   sh_link;
 			sectionHeaderEntryToWrite.sh_link,
 			# uint32_t   sh_info;
 			sectionHeaderEntryToWrite.sh_info,
-			# uint32_t   sh_addralign; (32 bit only!)
+			# uintN_t    sh_addralign; (N = 32/64)
 			sectionHeaderEntryToWrite.sh_addralign,
-			# uint32_t   sh_entsize;   (32 bit only!)
+			# uintN_t    sh_entsize;   (N = 32/64)
 			sectionHeaderEntryToWrite.sh_entsize,
 		))
 
@@ -498,38 +498,25 @@ class ElfParser:
 		'''
 		The section header has the following structure:
 
-		typedef struct {
+		typedef struct {               // differences in ELF64:
 			uint32_t   sh_name;
 			uint32_t   sh_type;
-			uint32_t   sh_flags;
-			Elf32_Addr sh_addr;
-			Elf32_Off  sh_offset;
-			uint32_t   sh_size;
+			uint32_t   sh_flags;       //     uint64_t
+			Elf32_Addr sh_addr;        //     Elf64_Addr
+			Elf32_Off  sh_offset;      //     Elf64_Off
+			uint32_t   sh_size;        //     uint64_t
 			uint32_t   sh_link;
 			uint32_t   sh_info;
-			uint32_t   sh_addralign;
-			uint32_t   sh_entsize;
-		} Elf32_Shdr;
-
-		typedef struct {
-			uint32_t   sh_name;
-			uint32_t   sh_type;
-			uint64_t   sh_flags;
-			Elf64_Addr sh_addr;
-			Elf64_Off  sh_offset;
-			uint64_t   sh_size;
-			uint32_t   sh_link;
-			uint32_t   sh_info;
-			uint64_t   sh_addralign;
-			uint64_t   sh_entsize;
-		} Elf64_Shdr;
+			uint32_t   sh_addralign;   //     uint64_t
+			uint32_t   sh_entsize;     //     uint64_t
+		} Elf32_Shdr;                  // } Elf64_Shdr;
 		'''
 
 		# create a list of the section_header_table
 		self.sections = list()
 
 		for i in range(self.header.e_shnum):
-			tempSectionEntry = Elf32_Shdr()
+			tempSectionEntry = ElfN_Shdr()
 			tempOffset = self.header.e_shoff + i*self.header.e_shentsize
 
 			'''
@@ -551,7 +538,7 @@ class ElfParser:
 					buffer_list[tempOffset+4:tempOffset+8])
 
 			'''
-			uint32_t   sh_flags;
+			uintN_t    sh_flags;        (N = 32/64)
 
 			Sections support one-bit flags that describe miscellaneous
 			attributes.  If a flag bit is set in sh_flags,  the  attribute
@@ -563,7 +550,7 @@ class ElfParser:
 					buffer_list[tempOffset+8:tempOffset+12])
 
 			'''
-			Elf32_Addr sh_addr;
+			ElfN_Addr  sh_addr;         (N = 32/64)
 
 			If this section appears in the memory image of a process, this
 			member holds the address at which the section's first byte
@@ -574,7 +561,7 @@ class ElfParser:
 					buffer_list[tempOffset+12:tempOffset+16])
 
 			'''
-			Elf32_Off  sh_offset;
+			ElfN_Off  sh_offset;        (N = 32/64)
 
 			This  member's  value holds the byte offset from the beginning
 			of the file to the first byte in the section.  One section
@@ -586,7 +573,7 @@ class ElfParser:
 					buffer_list[tempOffset+16:tempOffset+20])
 
 			'''
-			uint32_t   sh_size;
+			uintN_t    sh_size;		    (N = 32/64)
 
 			This member holds the section's size in bytes.  Unless the section
 			type is SHT_NOBITS, the section occupies sh_size bytes
@@ -616,7 +603,7 @@ class ElfParser:
 					buffer_list[tempOffset+28:tempOffset+32])
 
 			'''
-			uint32_t   sh_addralign;
+			uintN_t    sh_addralign;    (N = 32/64)
 
 			Some  sections  have  address  alignment constraints.  If a
 			section holds a doubleword, the system must ensure doubleword
@@ -631,7 +618,7 @@ class ElfParser:
 					buffer_list[tempOffset+32:tempOffset+36])
 
 			'''
-			uint32_t   sh_entsize;
+			uintN_t    sh_entsize;      (N = 32/64)
 
 			Some sections hold a table of fixed-sized entries, such as a
 			symbol table.  For such a section,  this  member  gives  the

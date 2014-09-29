@@ -12,8 +12,7 @@ class Section:
 
 	def __init__(self):
 		self.sectionName = ""
-		# for 32 bit systems only
-		self.elfN_shdr = Elf32_Shdr() # change here to load Elf64_Shdr
+		self.elfN_shdr = ElfN_Shdr()
 
 
 class Segment:
@@ -254,20 +253,20 @@ class Shstrndx:
 	SHN_HIRESERVE = 0xffff
 
 
-class Elf32_Shdr:
+class ElfN_Shdr:
 	'''
 	typedef struct {
 		uint32_t	sh_name;
 		uint32_t	sh_type;
-		uint32_t	sh_flags;
-		Elf32_Addr	sh_addr;
-		Elf32_Off	sh_offset;
-		uint32_t	sh_size;
+		uintN_t		sh_flags;     (N = 32/64)
+		ElfN_Addr	sh_addr;      (N = 32/64)
+		ElfN_Off	sh_offset;    (N = 32/64)
+		uintN_t		sh_size;      (N = 32/64)
 		uint32_t	sh_link;
 		uint32_t	sh_info;
-		uint32_t	sh_addralign;
-		uint32_t	sh_entsize;
-	} Elf32_Shdr;
+		uintN_t		sh_addralign; (N = 32/64)
+		uintN_t		sh_entsize;   (N = 32/64)
+	} ElfN_Shdr;
 	'''
 	def __init__(self):
 		self.sh_name = None
