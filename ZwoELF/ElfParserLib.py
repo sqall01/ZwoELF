@@ -17,7 +17,7 @@ from Elf import ElfN_Ehdr, Shstrndx, ElfN_Shdr, SH_flags, SH_type, \
 	Section, Segment, DynamicSymbol
 
 
-class ElfParser:
+class ElfParser(object):
 
 	def __init__(self, filename, force=False, startOffset=0,
 		forceDynSymParsing=0, onlyParseHeader=False):

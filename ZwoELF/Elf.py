@@ -8,14 +8,14 @@
 # Licensed under the GNU Public License, version 2.
 
 
-class Section:
+class Section(object):
 
 	def __init__(self):
 		self.sectionName = ""
 		self.elfN_shdr = ElfN_Shdr()
 
 
-class Segment:
+class Segment(object):
 
 	def __init__(self):
 		# for 32 bit systems only
@@ -24,16 +24,16 @@ class Segment:
 		self.segmentsWithin = list()
 
 
-class DynamicSymbol:
+class DynamicSymbol(object):
 
 	def __init__(self):
 		self.ElfN_Sym = ElfN_Sym()
 		self.symbolName = ""
 
 
-class ElfN_Ehdr:
+class ElfN_Ehdr(object):
 
-	class EI_OSABI:
+	class EI_OSABI(object):
 		'''
 		This  byte  identifies  the operating system and ABI to which the
 		object is targeted.  Some fields in other ELF structures have flags
@@ -58,7 +58,7 @@ class ElfN_Ehdr:
 		ELFOSABI_LINUX = 0x3
 
 
-	class EI_VERSION:
+	class EI_VERSION(object):
 		'''
 		The version number of the ELF specification:
 		EV_NONE 		Invalid version. (0x00)
@@ -69,7 +69,7 @@ class ElfN_Ehdr:
 		EV_CURRENT = 0x1
 
 
-	class EI_DATA:
+	class EI_DATA(object):
 		'''
 		The sixth byte of e_ident specifies the data encoding of the processor-
 		specific data in the file. Currently  these encodings are supported:
@@ -85,7 +85,7 @@ class ElfN_Ehdr:
 		ELFDATA2MSB = 0x2
 
 
-	class EI_CLASS:
+	class EI_CLASS(object):
 		'''
 		EI_CLASS The fifth byte of e_ident identifies the architecture for
 		this binary:
@@ -101,7 +101,7 @@ class ElfN_Ehdr:
 		ELFCLASS64 = 0x2
 
 
-	class E_machine:
+	class E_machine(object):
 		'''
 		uint16_t      e_machine;
 
@@ -155,7 +155,7 @@ class ElfN_Ehdr:
 		EM_VAX = 0x4B
 
 
-	class E_type:
+	class E_type(object):
 		'''
 		uint16_t      e_type;
 
@@ -213,7 +213,7 @@ class ElfN_Ehdr:
 		self.e_shstrndx = None
 
 
-class Shstrndx:
+class Shstrndx(object):
 	'''
 	SHN_UNDEF (0)	This  value  marks  an  undefined,  missing, irrelevant,
 		or otherwise meaningless section reference.  For
@@ -253,7 +253,7 @@ class Shstrndx:
 	SHN_HIRESERVE = 0xffff
 
 
-class ElfN_Shdr:
+class ElfN_Shdr(object):
 	'''
 	typedef struct {
 		uint32_t	sh_name;
@@ -281,7 +281,7 @@ class ElfN_Shdr:
 
 
 # section headers sh_flags values
-class SH_flags:
+class SH_flags(object):
 	'''
 	SHF_WRITE (0x1)      This section contains data that should be writable
 		during process execution.
@@ -302,7 +302,7 @@ class SH_flags:
 
 
 # section headers sh_type values
-class SH_type:
+class SH_type(object):
 	'''
 	SHT_NULL (0)      This  value  marks the section header as inactive.
 		It does not have an associated section.  Other members
@@ -395,7 +395,7 @@ class SH_type:
 	SHT_HIUSER = 0xffffffff
 
 
-class Elf32_Phdr:
+class Elf32_Phdr(object):
 	'''
 	typedef struct {
 		uint32_t   p_type;
@@ -420,7 +420,7 @@ class Elf32_Phdr:
 
 
 # program headers p_type values
-class P_type:
+class P_type(object):
 	'''
 	PT_NULL (0)     The array element is unused and the other members' values
 		are undefined.  This lets the program header have
@@ -491,13 +491,13 @@ class P_type:
 	PT_GNU_RELRO = 0x6474e552
 
 
-class P_flags:
+class P_flags(object):
 	PF_X = 0x1
 	PF_W = 0x2
 	PF_R = 0x4
 
 
-class D_tag:
+class D_tag(object):
 	'''
 	DT_NULL     Marks end of dynamic section
 
@@ -608,7 +608,7 @@ class D_tag:
 	DT_HIPROC = 0x7fffffff
 
 
-class ElfN_Dyn:
+class ElfN_Dyn(object):
 	'''
 	typedef struct {
 		Elf32_Sword    d_tag;
@@ -631,7 +631,7 @@ class ElfN_Dyn:
 		self.d_un = None
 
 
-class ElfN_Rel:
+class ElfN_Rel(object):
 	'''
 	typedef struct elf32_rel {
 		Elf32_Addr    r_offset;
@@ -671,7 +671,7 @@ class ElfN_Rel:
 		self.symbol = DynamicSymbol()
 
 
-class ElfN_Rela:
+class ElfN_Rela(object):
 	'''
 	typedef struct
 	{
@@ -702,7 +702,7 @@ class ElfN_Rela:
 		self.symbol = DynamicSymbol()
 
 
-class ElfN_Sym:
+class ElfN_Sym(object):
 	'''
 	typedef struct elf32_sym {
 		Elf32_Word		st_name;
@@ -731,7 +731,7 @@ class ElfN_Sym:
 		st_shndx = None
 
 
-class R_type:
+class R_type(object):
 	'''
 	R_386_GOT32 	This relocation type computes the distance from the
 		base of the global offset
