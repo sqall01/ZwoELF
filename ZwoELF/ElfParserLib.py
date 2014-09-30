@@ -20,7 +20,7 @@ from Elf import ElfN_Ehdr, Shstrndx, ElfN_Shdr, SH_flags, SH_type, \
 class ElfParser(object):
 
 	def __init__(self, filename, force=False, startOffset=0,
-		forceDynSymParsing=0, onlyParseHeader=False):
+			forceDynSymParsing=0, onlyParseHeader=False):
 		self.forceDynSymParsing = forceDynSymParsing
 		self.header = None
 		self.segments = list()
@@ -31,7 +31,8 @@ class ElfParser(object):
 		self.jumpRelocationEntries = list()
 		self.relocationEntries = list()
 		self.startOffset = startOffset
-		self.bits = 32
+		self.data = bytearray()
+		self.bits = 0
 
 		# read file and convert data to list
 		f = open(filename, "rb")
@@ -76,7 +77,12 @@ class ElfParser(object):
 	# this function converts a section header entry to a list of data
 	# return values: (bytearray) converted section header entry
 	def sectionHeaderEntryToBytearray(self, sectionHeaderEntryToWrite):
-		sectionHeaderEntryList = bytearray(struct.pack("<IIIIIIIIII",
+		if self.bits == 32:
+			structFormat = '< 2I 4I 2I 2I'
+		elif self.bits == 64:
+			structFormat = '< 2I 4Q 2I 2Q'
+
+		sectionHeaderEntryRaw = bytearray(struct.pack(structFormat,
 			# uint32_t   sh_name;
 			sectionHeaderEntryToWrite.sh_name,
 			# uint32_t   sh_type;
@@ -99,7 +105,7 @@ class ElfParser(object):
 			sectionHeaderEntryToWrite.sh_entsize,
 		))
 
-		return sectionHeaderEntryList
+		return sectionHeaderEntryRaw
 
 
 	# this function generates a new section
@@ -122,27 +128,23 @@ class ElfParser(object):
 		newsection.elfN_shdr.sh_type = sh_type
 
 		'''
-		uint32_t   sh_flags;
+		uintN_t    sh_flags;        (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_flags = sh_flags
 
 		'''
-		Elf32_Addr sh_addr;
+		ElfN_Addr  sh_addr;         (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_addr = sh_addr
 
 		'''
-		Elf32_Off  sh_offset;
+		ElfN_Off  sh_offset;        (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_offset = sh_offset
 
 		'''
-		uint32_t   sh_size;
+		uintN_t    sh_size;         (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_size = sh_size
 
 		'''
@@ -156,15 +158,13 @@ class ElfParser(object):
 		newsection.elfN_shdr.sh_info = sh_info
 
 		'''
-		uint32_t   sh_addralign;
+		uintN_t    sh_addralign;    (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_addralign = sh_addralign
 
 		'''
-		uint32_t   sh_entsize;
+		uintN_t    sh_entsize;      (N = 32/64)
 		'''
-		# for 32 bit systems only
 		newsection.elfN_shdr.sh_entsize = sh_entsize
 
 		return newsection
@@ -182,20 +182,49 @@ class ElfParser(object):
 		tempSymbol = DynamicSymbol()
 
 		# get values from the symbol table
-		(
-			# Elf32_Word        st_name;    (32 bit only!)
-			tempSymbol.ElfN_Sym.st_name,
-			# Elf32_Addr        st_value;   (32 bit only!)
-			tempSymbol.ElfN_Sym.st_value,
-			# Elf32_Word        st_size;    (32 bit only!)
-			tempSymbol.ElfN_Sym.st_size,
-			# unsigned char     st_info;    (32 bit only!)
-			tempSymbol.ElfN_Sym.st_info,
-			# unsigned char     st_other;   (32 bit only!)
-			tempSymbol.ElfN_Sym.st_other,
-			# Elf32_Half        st_shndx;   (32 bit only!)
-			tempSymbol.ElfN_Sym.st_shndx,
-		) = struct.unpack('<IIIBBH', self.data[offset:offset+16])
+		"""
+		typedef struct {
+			uint32_t      st_name;
+			Elf32_Addr    st_value;  // *
+			uint32_t      st_size;   // *
+			unsigned char st_info;
+			unsigned char st_other;
+			uint16_t      st_shndx;
+		} Elf32_Sym;
+
+		typedef struct {
+			uint32_t      st_name;
+			unsigned char st_info;
+			unsigned char st_other;
+			uint16_t      st_shndx;
+			Elf64_Addr    st_value;  // *
+			uint64_t      st_size;   // *
+		} Elf64_Sym;
+
+		Difference: order (*)
+		"""
+		if self.bits == 32:
+			fmt = '<I II BBH'
+			fmtSize = struct.calcsize(fmt)
+			(
+				tempSymbol.ElfN_Sym.st_name,
+				tempSymbol.ElfN_Sym.st_value,   # *
+				tempSymbol.ElfN_Sym.st_size,    # *
+				tempSymbol.ElfN_Sym.st_info,
+				tempSymbol.ElfN_Sym.st_other,
+				tempSymbol.ElfN_Sym.st_shndx,
+			) = struct.unpack(fmt, self.data[offset:offset+fmtSize])
+		elif self.bits == 64:
+			fmt = '<I BBH QQ'
+			fmtSize = struct.calcsize(fmt)
+			(
+				tempSymbol.ElfN_Sym.st_name,
+				tempSymbol.ElfN_Sym.st_info,
+				tempSymbol.ElfN_Sym.st_other,
+				tempSymbol.ElfN_Sym.st_shndx,
+				tempSymbol.ElfN_Sym.st_value,   # *
+				tempSymbol.ElfN_Sym.st_size,    # *
+			) = struct.unpack(fmt, self.data[offset:offset+fmtSize])
 
 		# extract name from the string table
 		nStart = stringTableOffset + tempSymbol.ElfN_Sym.st_name
@@ -219,8 +248,8 @@ class ElfParser(object):
 
 			data[offset:offset+fmtSize] = struct.pack(fmt,
 				elfSymbol.st_name,
-				elfSymbol.st_value,
-				elfSymbol.st_size,
+				elfSymbol.st_value, # *
+				elfSymbol.st_size,  # *
 				elfSymbol.st_info,
 				elfSymbol.st_other,
 				elfSymbol.st_shndx,
@@ -235,8 +264,8 @@ class ElfParser(object):
 				elfSymbol.st_info,
 				elfSymbol.st_other,
 				elfSymbol.st_shndx,
-				elfSymbol.st_value,
-				elfSymbol.st_size,
+				elfSymbol.st_value, # *
+				elfSymbol.st_size,  # *
 			)
 
 
@@ -244,8 +273,8 @@ class ElfParser(object):
 	# return values: None
 	def parseElf(self, buffer_list, onlyParseHeader=False):
 
-		# for 32 bit systems only
-		if len(buffer_list) < 52:
+		# large enough to contain e_ident?
+		if len(buffer_list) < 16:
 			raise ValueError("Buffer is too small to contain an ELF header.")
 
 		###############################################
@@ -280,97 +309,90 @@ class ElfParser(object):
 		'''
 		#define EI_NIDENT 16
 		unsigned char e_ident[EI_NIDENT];
+
+		The first 4 bytes of the magic number. These bytes must be:
+		EI_MAG0, EI_MAG1, EI_MAG2, EI_MAG3 == 0x7f, 'E', 'L', 'F'
+
+		The fifth byte identifies the architecture for this binary
 		'''
+
 		self.header.e_ident = buffer_list[0:16]
+
+		if self.header.e_ident[0:4] != b'\x7fELF':
+			raise NotImplementedError("First 4 bytes do not have magic value")
+
+
+		if self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASS32:
+			self.bits = 32
+		elif self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASS64:
+			self.bits = 64
+		elif self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASSNONE:
+			raise NotImplementedError("ELFCLASSNONE: This class is invalid.")
+		else:
+			raise NotImplementedError("Invalid ELFCLASS (e_ident[4]).")
+
+		if (self.bits == 32 and len(buffer_list) < 52) \
+		or (self.bits == 64 and len(buffer_list) < 64):
+			raise ValueError("Buffer is too small to contain an ELF header.")
 
 
 		'''
 		uint16_t      e_type;
 
 		This member of the structure identifies the object file type.
-		'''
-		(self.header.e_type, ) = struct.unpack('<H', buffer_list[16:18])
 
 
-		'''
 		uint16_t      e_machine;
 
 		This member specifies the required architecture for an individual file.
-		'''
-		(self.header.e_machine, ) = struct.unpack('<H', buffer_list[18:20])
 
 
-		'''
 		uint32_t      e_version;
 
 		This member identifies the file version:
 
 		EV_NONE     Invalid version.
 		EV_CURRENT  Current version.
-		'''
-		(self.header.e_version, ) = struct.unpack('<I', buffer_list[20:24])
 
 
-		'''
-		ElfN_Addr     e_entry;
+		ElfN_Addr     e_entry;      (32/64 bit!)
 
 		This member gives the virtual address to which the system first
 		transfers control, thus starting the process. If the file has no
 		associated entry point, this member holds zero.
-		'''
-		# for 32 bit systems only
-		(self.header.e_entry, ) = struct.unpack('<I', buffer_list[24:28])
 
 
-		'''
-		ElfN_Off      e_phoff;
+		ElfN_Off      e_phoff;      (32/64 bit!)
 
 		This  member holds the program header table's file offset in bytes.
 		If the file has no program header table, this member holds zero.
-		'''
-		# for 32 bit systems only
-		(self.header.e_phoff, ) = struct.unpack('<I', buffer_list[28:32])
 
 
-		'''
-		ElfN_Off      e_shoff;
+		ElfN_Off      e_shoff;      (32/64 bit!)
 
 		This member holds the section header table's file offset in bytes
 		(from the beginning of the file).  If the file has no section header
 		table this member holds zero.
-		'''
-		# for 32 bit systems only
-		(self.header.e_shoff, ) = struct.unpack('<I', buffer_list[32:36])
 
 
-		'''
 		uint32_t      e_flags;
 
 		This member holds processor-specific flags associated with the file.
 		Flag names take the form EF_`machine_flag'. Currently no flags have
 		been defined.
-		'''
-		(self.header.e_flags, ) = struct.unpack('<I', buffer_list[36:40])
 
 
-		'''
 		uint16_t      e_ehsize;
 
 		This member holds the ELF header's size in bytes.
-		'''
-		(self.header.e_ehsize, ) = struct.unpack('<H', buffer_list[40:42])
 
 
-		'''
 		uint16_t      e_phentsize;
 
 		This member holds the size in bytes of one entry in the file's
 		program header table; all entries are the same size.
-		'''
-		(self.header.e_phentsize, ) = struct.unpack('<H', buffer_list[42:44])
 
 
-		'''
 		uint16_t      e_phnum;
 
 		This member holds the number of entries in the program header table.
@@ -388,21 +410,15 @@ class ElfParser(object):
 		PN_XNUM  This  is defined as 0xffff, the largest number e_phnum can
 		have, specifying where the actual number of program headers
 		is assigned.
-		'''
-		(self.header.e_phnum, ) = struct.unpack('<H', buffer_list[44:46])
 
 
-		'''
 		uint16_t      e_shentsize;
 
 		This member holds a sections header's size in bytes.  A section
 		header is one entry in the section  header  table;  all
 		entries are the same size.
-		'''
-		(self.header.e_shentsize, ) = struct.unpack('<H', buffer_list[46:48])
 
 
-		'''
 		uint16_t      e_shnum;
 
 		This member holds the number of entries in the section header table.
@@ -417,11 +433,8 @@ class ElfParser(object):
 		entry in section header table.  Otherwise, the sh_size member of
 		the initial entry in the section  header  table  holds
 		the value zero.
-		'''
-		(self.header.e_shnum, ) = struct.unpack('<H', buffer_list[48:50])
 
 
-		'''
 		uint16_t      e_shstrndx;
 
 		This  member  holds  the section header table index of the entry
@@ -437,36 +450,31 @@ class ElfParser(object):
 		member of the initial entry in section header table contains
 		the value zero.
 		'''
-		(self.header.e_shstrndx, ) = struct.unpack('<H', buffer_list[50:52])
+
+		if self.bits == 32:
+			unpackedHeader = struct.unpack('< 2H I 3I I 6H', buffer_list[16:52])
+		elif self.bits == 64:
+			unpackedHeader = struct.unpack('< 2H I 3Q I 6H', buffer_list[16:64])
+
+		(
+				self.header.e_type,
+				self.header.e_machine,
+				self.header.e_version,
+				self.header.e_entry,    # 32/64 bit!
+				self.header.e_phoff,    # 32/64 bit!
+				self.header.e_shoff,    # 32/64 bit!
+				self.header.e_flags,
+				self.header.e_ehsize,
+				self.header.e_phentsize,
+				self.header.e_phnum,
+				self.header.e_shentsize,
+				self.header.e_shnum,
+				self.header.e_shstrndx,
+		) = unpackedHeader
 
 
 		###############################################
 		# check if ELF is supported
-
-		'''
-		EI_MAG0     The first byte of the magic number. It must be
-			filled with ELFMAG0. (0x7f)
-		EI_MAG1     The second byte of the magic number. It must be
-			filled with ELFMAG1. ('E')
-		EI_MAG2     The third byte of the magic number. It must be
-			filled with ELFMAG2. ('L')
-		EI_MAG3     The fourth byte of the magic number. It must be
-			filled with ELFMAG3. ('F')
-		'''
-		if self.header.e_ident[0:4] != b'\x7fELF':
-			raise NotImplementedError("First 4 bytes do not have magic value")
-
-
-		'''
-		The fifth byte identifies the architecture for this binary
-		'''
-		if self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASSNONE:
-			raise NotImplementedError("ELFCLASSNONE: This class is invalid.")
-		elif self.header.e_ident[4] == ElfN_Ehdr.EI_CLASS.ELFCLASS64:
-			raise NotImplementedError("ELFCLASS64: Not yet supported.")
-		elif self.header.e_ident[4] != ElfN_Ehdr.EI_CLASS.ELFCLASS32:
-			raise NotImplementedError("This class is invalid.")
-
 
 		'''
 		The sixth byte specifies the data encoding of the
@@ -521,8 +529,19 @@ class ElfParser(object):
 
 
 		# check if e_machine is supported at the moment
-		if not (self.header.e_machine == ElfN_Ehdr.E_machine.EM_386):
-			raise NotImplementedError("Only e_machine EM_386 is supported yet")
+		expectedMachine = {
+				32: ElfN_Ehdr.E_machine.EM_386,
+				64: ElfN_Ehdr.E_machine.EM_X86_64,
+		}[self.bits]
+
+		if self.header.e_machine != expectedMachine:
+			try:
+				EM = ElfN_Ehdr.E_machine.reverse_lookup[self.header.e_machine]
+			except KeyError:
+				EM = hex(self.header.e_machine)
+			raise NotImplementedError("Only e_machine EM_386 for ELFCLASS32" \
+					+ " and EM_X86_64 for ELFCLASS64 are supported yet" \
+					+ " (file has {})".format(EM))
 
 
 		# check if only the header of the ELF file should be parsed
@@ -560,93 +579,62 @@ class ElfParser(object):
 		self.sections = list()
 
 		for i in range(self.header.e_shnum):
-			tempSectionEntry = ElfN_Shdr()
-			tempOffset = self.header.e_shoff + i*self.header.e_shentsize
-
 			'''
 			uint32_t   sh_name;
 
 			This member specifies the name of the section.  Its value is an
 			index into the section header string table section,  giving the
 			location of a null-terminated string.
-			'''
-			(tempSectionEntry.sh_name, ) = struct.unpack('<I',
-					buffer_list[tempOffset:tempOffset+4])
 
-			'''
+
 			uint32_t   sh_type;
 
 			This member categorizes the section's contents and semantics.
-			'''
-			(tempSectionEntry.sh_type, ) = struct.unpack('<I',
-					buffer_list[tempOffset+4:tempOffset+8])
 
-			'''
+
 			uintN_t    sh_flags;        (N = 32/64)
 
 			Sections support one-bit flags that describe miscellaneous
 			attributes.  If a flag bit is set in sh_flags,  the  attribute
 			is "on" for the section.  Otherwise, the attribute is "off" or
 			does not apply.  Undefined attributes are set to zero.
-			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_flags, ) = struct.unpack('<I',
-					buffer_list[tempOffset+8:tempOffset+12])
 
-			'''
+
 			ElfN_Addr  sh_addr;         (N = 32/64)
 
 			If this section appears in the memory image of a process, this
 			member holds the address at which the section's first byte
 			should reside.  Otherwise, the member contains zero.
-			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_addr, ) = struct.unpack('<I',
-					buffer_list[tempOffset+12:tempOffset+16])
 
-			'''
+
 			ElfN_Off  sh_offset;        (N = 32/64)
 
 			This  member's  value holds the byte offset from the beginning
 			of the file to the first byte in the section.  One section
 			type, SHT_NOBITS, occupies no space in the file, and its
 			sh_offset member locates the conceptual placement in the file.
-			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_offset, ) = struct.unpack('<I',
-					buffer_list[tempOffset+16:tempOffset+20])
 
-			'''
-			uintN_t    sh_size;		    (N = 32/64)
+
+			uintN_t    sh_size;         (N = 32/64)
 
 			This member holds the section's size in bytes.  Unless the section
 			type is SHT_NOBITS, the section occupies sh_size bytes
 			in the file.  A section of type SHT_NOBITS may have a nonzero
 			size, but it occupies no space in the file.
-			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_size, ) = struct.unpack('<I',
-					buffer_list[tempOffset+20:tempOffset+24])
 
-			'''
+
 			uint32_t   sh_link;
 
 			This member holds a section header table index link, whose
 			interpretation depends on the section type.
-			'''
-			(tempSectionEntry.sh_link, ) = struct.unpack('<I',
-					buffer_list[tempOffset+24:tempOffset+28])
 
-			'''
+
 			uint32_t   sh_info;
 
 			This member holds extra information, whose interpretation
 			depends on the section type.
-			'''
-			(tempSectionEntry.sh_info, ) = struct.unpack('<I',
-					buffer_list[tempOffset+28:tempOffset+32])
 
-			'''
+
 			uintN_t    sh_addralign;    (N = 32/64)
 
 			Some  sections  have  address  alignment constraints.  If a
@@ -656,12 +644,8 @@ class ElfParser(object):
 			sh_addralign.   Only zero and positive integral powers of two
 			are allowed.  Values of zero or one mean the section has no
 			alignment constraints.
-			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_addralign, ) = struct.unpack('<I',
-					buffer_list[tempOffset+32:tempOffset+36])
 
-			'''
+
 			uintN_t    sh_entsize;      (N = 32/64)
 
 			Some sections hold a table of fixed-sized entries, such as a
@@ -669,11 +653,32 @@ class ElfParser(object):
 			size in bytes for each entry.  This member contains zero if
 			the section does not hold a table of fixed-size entries.
 			'''
-			# for 32 bit systems only
-			(tempSectionEntry.sh_entsize, ) = struct.unpack('<I',
-					buffer_list[tempOffset+36:tempOffset+40])
 
+			tempSectionEntry = ElfN_Shdr()
+			tempOffset = self.header.e_shoff + i*self.header.e_shentsize
+
+			if self.bits == 32:
+				fmt = '< 2I 4I 2I 2I'
+			elif self.bits == 64:
+				fmt = '< 2I 4Q 2I 2Q'
+
+			fmtSize = struct.calcsize(fmt)
+			assert fmtSize == self.header.e_shentsize
+
+			(
+					tempSectionEntry.sh_name,
+					tempSectionEntry.sh_type,
+					tempSectionEntry.sh_flags,      # 32/64 bit!
+					tempSectionEntry.sh_addr,       # 32/64 bit!
+					tempSectionEntry.sh_offset,     # 32/64 bit!
+					tempSectionEntry.sh_size,       # 32/64 bit!
+					tempSectionEntry.sh_link,
+					tempSectionEntry.sh_info,
+					tempSectionEntry.sh_addralign,  # 32/64 bit!
+					tempSectionEntry.sh_entsize,    # 32/64 bit!
+			) = struct.unpack(fmt, buffer_list[tempOffset:tempOffset+fmtSize])
 			del tempOffset
+			del fmtSize
 
 			# create new section and add to sections list
 			section = Section()
@@ -735,79 +740,57 @@ class ElfParser(object):
 			uint64_t   p_memsz;
 			uint64_t   p_align;
 		} Elf64_Phdr;
+
+		The main difference lies in the location of p_flags within the struct.
 		'''
 
 		# create a list of the program_header_table
 		self.segments = list()
 
 		for i in range(self.header.e_phnum):
-
-			tempSegment = Segment()
-			tempOffset = self.header.e_phoff + i*self.header.e_phentsize
-
 			'''
 			uint32_t   p_type;
 
 			This  member  of  the Phdr struct tells what kind of segment
 			this array element describes or how to interpret the array
 			element's information.
-			'''
-			(tempSegment.elfN_Phdr.p_type, ) = struct.unpack('<I',
-				buffer_list[tempOffset:tempOffset+4])
 
-			'''
-			Elf32_Off  p_offset;
+
+			(uint32_t  p_flags;         (Elf64_Phdr only, see below))
+
+
+			ElfN_Off   p_offset;        (N = 32/64)
 
 			This member holds the offset from the beginning of the
 			file at which the first byte of the segment resides.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_offset, ) = struct.unpack('<I',
-				buffer_list[tempOffset+4:tempOffset+8])
 
-			'''
-			Elf32_Addr p_vaddr;
+
+			ElfN_Addr  p_vaddr;         (N = 32/64)
 
 			This member holds the virtual address at which the first
 			byte of the segment resides in memory.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_vaddr, ) = struct.unpack('<I',
-				buffer_list[tempOffset+8:tempOffset+12])
 
-			'''
-			Elf32_Addr p_paddr;
+
+			ElfN_Addr  p_paddr;         (N = 32/64)
 
 			On  systems  for  which  physical  addressing  is relevant, this
 			member is reserved for the segment's physical address.
 			Under BSD this member is not used and must be zero.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_paddr, ) = struct.unpack('<I',
-				buffer_list[tempOffset+12:tempOffset+16])
 
-			'''
-			uint32_t   p_filesz;
+
+			uintN_t    p_filesz;        (N = 32/64)
 
 			This member holds the number of bytes in the file image of
 			the segment.  It may be zero.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_filesz, ) = struct.unpack('<I',
-				buffer_list[tempOffset+16:tempOffset+20])
 
-			'''
-			uint32_t   p_memsz;
+
+			uintN_t    p_memsz;         (N = 32/64)
 
 			This member holds the number of bytes in the memory image
 			of the segment.  It may be zero.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_memsz, ) = struct.unpack('<I',
-				buffer_list[tempOffset+20:tempOffset+24])
 
-			'''
-			uint32_t   p_flags;
+
+			uint32_t   p_flags;         (Elf32_Phdr only, for 64 see above)
 
 			This member holds a bitmask of flags relevant to the segment:
 
@@ -817,13 +800,8 @@ class ElfParser(object):
 
 			A text segment commonly has the flags PF_X and PF_R.
 			A data segment commonly has PF_X, PF_W and PF_R.
-			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_flags, ) = struct.unpack('<I',
-				buffer_list[tempOffset+24:tempOffset+28])
 
-			'''
-			uint32_t   p_align;
+			uintN_t    p_align;         (N = 32/64)
 
 			This member holds the value to which the segments are aligned
 			in memory and in the  file.   Loadable  process  segments
@@ -833,11 +811,32 @@ class ElfParser(object):
 			power of two, and p_vaddr should  equal  p_offset,  modulo
 			p_align.
 			'''
-			# for 32 bit systems only
-			(tempSegment.elfN_Phdr.p_align, ) = struct.unpack('<I',
-				buffer_list[tempOffset+28:tempOffset+32])
+
+			tempSegment = Segment()
+			tempOffset = self.header.e_phoff + i*self.header.e_phentsize
+
+			if self.bits == 32:
+				unpackedSegment = struct.unpack('< I 5I I I', \
+						buffer_list[tempOffset:tempOffset+32])
+			elif self.bits == 64:
+				unpackedSegment = struct.unpack('< I I 5Q Q', \
+						buffer_list[tempOffset:tempOffset+56])
+				# order elements as in Elf32_Phdr
+				unpackedSegment = unpackedSegment[0:1] + unpackedSegment[2:7] \
+						+ unpackedSegment[1:2] + unpackedSegment[7:8]
 
 			del tempOffset
+
+			(
+					tempSegment.elfN_Phdr.p_type,
+					tempSegment.elfN_Phdr.p_offset, # 32/64 bit!
+					tempSegment.elfN_Phdr.p_vaddr,  # 32/64 bit!
+					tempSegment.elfN_Phdr.p_paddr,  # 32/64 bit!
+					tempSegment.elfN_Phdr.p_filesz, # 32/64 bit!
+					tempSegment.elfN_Phdr.p_memsz,  # 32/64 bit!
+					tempSegment.elfN_Phdr.p_flags,  # position as in Elf32_Phdr
+					tempSegment.elfN_Phdr.p_align,  # 32/64 bit!
+			) = unpackedSegment
 
 			# check which sections are in the current segment
 			# (in memory) and add them
@@ -855,10 +854,12 @@ class ElfParser(object):
 
 		# get all segments within a segment
 		for outerSegment in self.segments:
+			# PT_GNU_STACK only holds access rights
 			if outerSegment.elfN_Phdr.p_type == P_type.PT_GNU_STACK:
 				continue
 
 			for segmentWithin in self.segments:
+				# PT_GNU_STACK only holds access rights
 				if segmentWithin.elfN_Phdr.p_type == P_type.PT_GNU_STACK:
 					continue
 
@@ -907,24 +908,26 @@ class ElfParser(object):
 		# create a list for all dynamic segment entries
 		self.dynamicSegmentEntries = list()
 
-		# for 32 bit systems only
+		if self.bits == 32:
+			structFmt = '<II'
+		elif self.bits == 64:
+			structFmt = '<QQ'
+
+		dynSegEntrySize = struct.calcsize(structFmt)
+
 		endReached = False
-		for i in range((dynamicSegment.elfN_Phdr.p_filesz / 8)):
+		for i in range((dynamicSegment.elfN_Phdr.p_filesz / dynSegEntrySize)):
 
 			# parse dynamic segment entry
 			dynSegmentEntry = ElfN_Dyn()
 
-			tempOffset = dynamicSegment.elfN_Phdr.p_offset + i*8
+			tempOffset = dynamicSegment.elfN_Phdr.p_offset + i*dynSegEntrySize
 			(
-				# Elf32_Sword d_tag;   (32 bit only!)
-				dynSegmentEntry.d_tag,
+					dynSegmentEntry.d_tag,
+					dynSegmentEntry.d_un,
+			) = struct.unpack(structFmt,
+					self.data[tempOffset:tempOffset+dynSegEntrySize])
 
-				# union {
-				#       Elf32_Sword d_val;
-				#       Elf32_Addr  d_ptr;
-				# } d_un               (32 bit only!)
-				dynSegmentEntry.d_un,
-			) = struct.unpack('<II', self.data[tempOffset:tempOffset+8])
 			del tempOffset
 
 			# add dynamic segment entry to list
@@ -1631,18 +1634,18 @@ class ElfParser(object):
 		# write ELF header back
 		newfile[0:len(self.header.e_ident)] = self.header.e_ident
 
-		newfile[16:52] = struct.pack('<HHIIIIIHHHHHH',
+		headerFields = (
 			# uint16_t      e_type;
 			self.header.e_type,
 			# uint16_t      e_machine;
 			self.header.e_machine,
 			# uint32_t      e_version;
 			self.header.e_version,
-			# ElfN_Addr     e_entry;   (32 bit only!)
+			# ElfN_Addr     e_entry;   (32/64 bit)
 			self.header.e_entry,
-			# ElfN_Off      e_phoff;   (32 bit only!)
+			# ElfN_Off      e_phoff;   (32/64 bit)
 			self.header.e_phoff,
-			# ElfN_Off      e_shoff;   (32 bit only!)
+			# ElfN_Off      e_shoff;   (32/64 bit)
 			self.header.e_shoff,
 			# uint32_t      e_flags;
 			self.header.e_flags,
@@ -1660,6 +1663,11 @@ class ElfParser(object):
 			self.header.e_shstrndx
 		)
 
+		if self.bits == 32:
+			newfile[16:52] = struct.pack('< 2H I 3I I 6H', *headerFields)
+		elif self.bits == 64:
+			newfile[16:64] = struct.pack('< 2H I 3Q I 6H', *headerFields)
+
 		# ------
 
 		# write programm header table back
@@ -1672,31 +1680,59 @@ class ElfParser(object):
 				newfile.extend(bytearray(requiredSize - len(newfile)))
 
 			tempOffset = self.header.e_phoff + i*self.header.e_phentsize
-			newfile[tempOffset:tempOffset+32] = struct.pack('<IIIIIIII',
-				# uint32_t   p_type;
-				self.segments[i].elfN_Phdr.p_type,
+			'''
+			typedef struct {
+				uint32_t   p_type;
+				Elf32_Off  p_offset;
+				Elf32_Addr p_vaddr;
+				Elf32_Addr p_paddr;
+				uint32_t   p_filesz;
+				uint32_t   p_memsz;
+				uint32_t   p_flags;   // *
+				uint32_t   p_align;
+			} Elf32_Phdr;
 
-				# Elf32_Off  p_offset;    (32 bit only!)
-				self.segments[i].elfN_Phdr.p_offset,
+			typedef struct {
+				uint32_t   p_type;
+				uint32_t   p_flags;   // *
+				Elf64_Off  p_offset;
+				Elf64_Addr p_vaddr;
+				Elf64_Addr p_paddr;
+				uint64_t   p_filesz;
+				uint64_t   p_memsz;
+				uint64_t   p_align;
+			} Elf64_Phdr;
 
-				# Elf32_Addr p_vaddr;     (32 bit only!)
-				self.segments[i].elfN_Phdr.p_vaddr,
-
-				# Elf32_Addr p_paddr;     (32 bit only!)
-				self.segments[i].elfN_Phdr.p_paddr,
-
-				# uint32_t   p_filesz;    (32 bit only!)
-				self.segments[i].elfN_Phdr.p_filesz,
-
-				# uint32_t   p_memsz;     (32 bit only!)
-				self.segments[i].elfN_Phdr.p_memsz,
-
-				# uint32_t   p_flags;     (32 bit only!)
-				self.segments[i].elfN_Phdr.p_flags,
-
-				# uint32_t   p_align;     (32 bit only!)
-				self.segments[i].elfN_Phdr.p_align,
-			)
+			The main difference lies in the location of p_flags within the struct.
+			'''
+			if self.bits == 32:
+				fmt = '< I 5I I I'
+				fmtSize = struct.calcsize(fmt)
+				assert self.header.e_phentsize == fmtSize
+				newfile[tempOffset:tempOffset+fmtSize] = struct.pack(fmt,
+					self.segments[i].elfN_Phdr.p_type,
+					self.segments[i].elfN_Phdr.p_offset,
+					self.segments[i].elfN_Phdr.p_vaddr,
+					self.segments[i].elfN_Phdr.p_paddr,
+					self.segments[i].elfN_Phdr.p_filesz,
+					self.segments[i].elfN_Phdr.p_memsz,
+					self.segments[i].elfN_Phdr.p_flags,     # <- p_flags
+					self.segments[i].elfN_Phdr.p_align,
+				)
+			elif self.bits == 64:
+				fmt = '< I I 5Q Q'
+				fmtSize = struct.calcsize(fmt)
+				assert self.header.e_phentsize == fmtSize
+				newfile[tempOffset:tempOffset+fmtSize] = struct.pack(fmt,
+					self.segments[i].elfN_Phdr.p_type,
+					self.segments[i].elfN_Phdr.p_flags,     # <- p_flags
+					self.segments[i].elfN_Phdr.p_offset,
+					self.segments[i].elfN_Phdr.p_vaddr,
+					self.segments[i].elfN_Phdr.p_paddr,
+					self.segments[i].elfN_Phdr.p_filesz,
+					self.segments[i].elfN_Phdr.p_memsz,
+					self.segments[i].elfN_Phdr.p_align,
+				)
 			del tempOffset
 
 
@@ -1711,18 +1747,25 @@ class ElfParser(object):
 		if dynamicSegment is None:
 			raise ValueError("Segment of type PT_DYNAMIC was not found.")
 
+		if self.bits == 32:
+			structFmt = '<II'
+		elif self.bits == 64:
+			structFmt = '<QQ'
+
+		dynSegEntrySize = struct.calcsize(structFmt)
+
 		# write all dynamic segment entries back
 		for i in range(len(self.dynamicSegmentEntries)):
 
-			tempOffset = dynamicSegment.elfN_Phdr.p_offset + i*8
-			newfile[tempOffset:tempOffset+8] = struct.pack('<II',
-				# Elf32_Sword    d_tag;   (32 bit only!)
+			tempOffset = dynamicSegment.elfN_Phdr.p_offset + i*dynSegEntrySize
+			newfile[tempOffset:tempOffset+dynSegEntrySize] = struct.pack(structFmt,
+				# ElfN_Sword    d_tag;
 				self.dynamicSegmentEntries[i].d_tag,
 
 				# union {
-				#       Elf32_Word d_val;
-				#       Elf32_Addr d_ptr;
-				# } d_un;                 (32 bit only!)
+				#       ElfN_Word d_val;
+				#       ElfN_Addr d_ptr;
+				# } d_un;
 				self.dynamicSegmentEntries[i].d_un,
 			)
 			del tempOffset
@@ -1730,11 +1773,12 @@ class ElfParser(object):
 		# overwrite rest of segment with 0x00 (default padding data)
 		# (NOTE: works in all test cases, but can cause md5 parsing
 		# check to fail!)
-		# for 32 bit systems only
-		for i in range(dynamicSegment.elfN_Phdr.p_filesz
-			- (len(self.dynamicSegmentEntries)*8)):
-			newfile[dynamicSegment.elfN_Phdr.p_offset \
-				+ (len(self.dynamicSegmentEntries)*8) + i] = "\x00"
+		tmpStart = dynamicSegment.elfN_Phdr.p_offset \
+				+ len(self.dynamicSegmentEntries) * dynSegEntrySize
+		tmpEnd = dynamicSegment.elfN_Phdr.p_offset \
+				+ dynamicSegment.elfN_Phdr.p_filesz
+		if tmpStart < tmpEnd:
+			newfile[tmpStart:tmpEnd] = bytearray(tmpEnd - tmpStart)
 
 		# ------
 
@@ -2097,8 +2141,10 @@ class ElfParser(object):
 		if len(self.sections) == 0:
 
 			# restore section header entry size
-			# for 32 bit systems only
-			self.header.e_shentsize = 40
+			if self.bits == 32:
+				self.header.e_shentsize = struct.calcsize('< 2I 4I 2I 2I')
+			elif self.bits == 64:
+				self.header.e_shentsize = struct.calcsize('< 2I 4Q 2I 2Q')
 
 			# when using gcc, first section is NULL section
 			# => create one and add it
@@ -2183,8 +2229,8 @@ class ElfParser(object):
 			for i in range(self.header.e_shnum):
 				if (i+1) < self.header.e_shnum:
 					if (self.sections[i].elfN_shdr.sh_offset < newSectionOffset
-						and self.sections[i+1].elfN_shdr.sh_offset
-						>= newSectionOffset):
+							and self.sections[i+1].elfN_shdr.sh_offset
+							>= newSectionOffset):
 						positionNewSection = i+1
 
 						# if new section comes before string table section
@@ -2489,8 +2535,11 @@ class ElfParser(object):
 			entryToModify.r_offset)
 
 		# generate list with new memory address for got
-		# for 32 bit systems only
-		newGotAddr = struct.pack('<I', memoryAddr)
+		if self.bits == 32:
+			fmt = '<I'
+		elif self.bits == 64:
+			fmt = '<Q'
+		newGotAddr = struct.pack(fmt, memoryAddr)
 
 		# overwrite old offset
 		self.writeDataToFileOffset(entryOffset, newGotAddr)
@@ -2520,7 +2569,12 @@ class ElfParser(object):
 		entryOffset = self.virtualMemoryAddrToFileOffset(
 			entryToModify.r_offset)
 
-		return struct.unpack('<I', self.data[entryOffset:entryOffset+4])[0]
+		if self.bits == 32:
+			fmt = '<I'
+		elif self.bits == 64:
+			fmt = '<Q'
+		fmtSize = struct.calcsize(fmt)
+		return struct.unpack(fmt, self.data[entryOffset:entryOffset+fmtSize])[0]
 
 
 	# this function gets the memory address of the got
