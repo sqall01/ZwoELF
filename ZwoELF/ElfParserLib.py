@@ -1211,6 +1211,9 @@ class ElfParser(object):
 	# this function dumps a list of relocations (used in printElf())
 	# return values: None
 	def printRelocations(self, relocationList, title):
+		printAddend = len(relocationList) \
+				and type(relocationList[0]) == ElfN_Rela
+
 		# output all jump relocation entries
 		print("%s (%d entries)" % (title, len(relocationList)))
 		print("No."),
@@ -1223,6 +1226,9 @@ class ElfParser(object):
 		print("\t\t"),
 		print("Type"),
 		print("\t\t"),
+		if printAddend:
+			print("Addend"),
+			print("\t\t"),
 		print("Sym. value"),
 		print("\t"),
 		print("Sym. name"),
@@ -1235,6 +1241,9 @@ class ElfParser(object):
 		print("(r_info)"),
 		print("\t"),
 		print("(r_type)"),
+		if printAddend:
+			print("\t"),
+			print("(r_addend)"),
 		print
 
 		counter = 0
@@ -1264,6 +1273,13 @@ class ElfParser(object):
 				print("%s" % R_type.reverse_lookup[entry.r_type]),
 			else:
 				print("0x%x" % entry.r_type),
+
+			if printAddend:
+				if type(entry) == ElfN_Rela:
+					print("\t"),
+					print("0x" + ("%x" % entry.r_addend).zfill(8)),
+				else:
+					print("\t\t"),
 
 			print("\t"),
 			print("0x" + ("%x" % symbol.st_value).zfill(8)),
