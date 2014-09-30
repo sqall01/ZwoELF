@@ -1208,6 +1208,76 @@ class ElfParser(object):
 				self.relocationEntries.append(relEntry)
 
 
+	# this function dumps a list of relocations (used in printElf())
+	# return values: None
+	def printRelocations(self, relocationList, title):
+		# output all jump relocation entries
+		print("%s (%d entries)" % (title, len(relocationList)))
+		print("No."),
+		print("\t"),
+		print("MemAddr"),
+		print("\t"),
+		print("File offset"),
+		print("\t"),
+		print("Info"),
+		print("\t\t"),
+		print("Type"),
+		print("\t\t"),
+		print("Sym. value"),
+		print("\t"),
+		print("Sym. name"),
+		print
+		print("\t"),
+		print("(r_offset)"),
+		print("\t"),
+		print("\t"),
+		print("\t"),
+		print("(r_info)"),
+		print("\t"),
+		print("(r_type)"),
+		print
+
+		counter = 0
+		for entry in relocationList:
+			symbol = entry.symbol.ElfN_Sym
+			print("%d" % counter),
+			print("\t"),
+			print("0x" + ("%x" % entry.r_offset).zfill(8)),
+			print("\t"),
+
+			# try to convert the virtual memory address to a file offset
+			# in executable and share object files
+			# => r_offset holds a virtual address
+			try:
+				print("0x" + ("%x" \
+					% self.virtualMemoryAddrToFileOffset(
+					entry.r_offset)).zfill(8)),
+			except:
+				print("None\t"),
+
+			print("\t"),
+			print("0x" + ("%x" % entry.r_info).zfill(8)),
+			print("\t"),
+
+			# translate type
+			if entry.r_type in R_type.reverse_lookup.keys():
+				print("%s" % R_type.reverse_lookup[entry.r_type]),
+			else:
+				print("0x%x" % entry.r_type),
+
+			print("\t"),
+			print("0x" + ("%x" % symbol.st_value).zfill(8)),
+
+			print("\t"),
+			print(entry.symbol.symbolName),
+
+			print
+
+			counter += 1
+
+		print
+
+
 	# this function outputs the parsed ELF file (like readelf)
 	# return values: None
 	def printElf(self):
@@ -1395,138 +1465,11 @@ class ElfParser(object):
 			print
 			counter += 1
 
+		self.printRelocations(self.jumpRelocationEntries,
+				"Jump relocation entries")
 
-		# output all jump relocation entries
-		print("Jump relocation entries (%d entries)" \
-			% len(self.jumpRelocationEntries))
-		print("No."),
-		print("\t"),
-		print("MemAddr"),
-		print("\t"),
-		print("File offset"),
-		print("\t"),
-		print("Info"),
-		print("\t\t"),
-		print("Type"),
-		print("\t\t"),
-		print("Sym. value"),
-		print("\t"),
-		print("Sym. name"),
-		print
-		print("\t"),
-		print("(r_offset)"),
-		print("\t"),
-		print("\t"),
-		print("\t"),
-		print("(r_info)"),
-		print("\t"),
-		print("(r_type)"),
-		print
-
-		counter = 0
-		for entry in self.jumpRelocationEntries:
-			symbol = entry.symbol.ElfN_Sym
-			print("%d" % counter),
-			print("\t"),
-			print("0x" + ("%x" % entry.r_offset).zfill(8)),
-			print("\t"),
-
-			# try to convert the virtual memory address to a file offset
-			# in executable and share object files
-			# => r_offset holds a virtual address
-			try:
-				print("0x" + ("%x" \
-					% self.virtualMemoryAddrToFileOffset(
-					entry.r_offset)).zfill(8)),
-			except:
-				print("None\t"),
-
-			print("\t"),
-			print("0x" + ("%x" % entry.r_info).zfill(8)),
-			print("\t"),
-
-			# translate type
-			if entry.r_type in R_type.reverse_lookup.keys():
-				print("%s" % R_type.reverse_lookup[entry.r_type]),
-			else:
-				print("0x%x" % entry.r_type),
-
-			print("\t"),
-			print("0x" + ("%x" % symbol.st_value).zfill(8)),
-
-			print("\t"),
-			print(entry.symbol.symbolName),
-
-			print
-
-			counter += 1
-
-		print
-
-		# output all relocation entries
-		print("Relocation entries (%d entries)" % len(self.relocationEntries))
-		print("No."),
-		print("\t"),
-		print("MemAddr"),
-		print("\t"),
-		print("File offset"),
-		print("\t"),
-		print("Info"),
-		print("\t\t"),
-		print("Type"),
-		print("\t\t"),
-		print("Sym. value"),
-		print("\t"),
-		print("Sym. name"),
-		print
-		print("\t"),
-		print("(r_offset)"),
-		print("\t"),
-		print("\t"),
-		print("\t"),
-		print("(r_info)"),
-		print("\t"),
-		print("(r_type)"),
-		print
-
-		counter = 0
-		for entry in self.relocationEntries:
-			symbol = entry.symbol.ElfN_Sym
-			print("%d" % counter),
-			print("\t"),
-			print("0x" + ("%x" % entry.r_offset).zfill(8)),
-			print("\t"),
-
-			# try to convert the virtual memory address to a file offset
-			# in executable and share object files
-			# => r_offset holds a virtual address
-			try:
-				print("0x" + ("%x" \
-					% self.virtualMemoryAddrToFileOffset(
-					entry.r_offset)).zfill(8)),
-			except:
-				print("None\t"),
-
-			print("\t"),
-			print("0x" + ("%x" % entry.r_info).zfill(8)),
-			print("\t"),
-
-			# translate type
-			if entry.r_type in R_type.reverse_lookup.keys():
-				print("%s" % R_type.reverse_lookup[entry.r_type]),
-			else:
-				print("0x%x" % entry.r_type),
-
-			print("\t"),
-			print("0x" + ("%x" % symbol.st_value).zfill(8)),
-
-			print("\t"),
-			print(entry.symbol.symbolName),
-
-			print
-			counter += 1
-
-		print
+		self.printRelocations(self.relocationEntries,
+				"Relocation entries")
 
 		# output all dynamic symbol entries
 		print("Dynamic symbols (%d entries)" % len(self.dynamicSymbolEntries))
