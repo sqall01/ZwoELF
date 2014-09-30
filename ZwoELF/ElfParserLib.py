@@ -209,6 +209,37 @@ class ElfParser(object):
 		return tempSymbol
 
 
+	# this function writes a dynamic symbol to a given offset
+	# return values: None
+	def _writeDynamicSymbol(self, data, offset, elfSymbol):
+		if self.bits == 32:
+			fmt = '< I II BBH'
+			fmtSize = struct.calcsize(fmt)
+			assert fmtSize == 16
+
+			data[offset:offset+fmtSize] = struct.pack(fmt,
+				elfSymbol.st_name,
+				elfSymbol.st_value,
+				elfSymbol.st_size,
+				elfSymbol.st_info,
+				elfSymbol.st_other,
+				elfSymbol.st_shndx,
+			)
+		elif self.bits == 64:
+			fmt = '<I BBH QQ'
+			fmtSize = struct.calcsize(fmt)
+			assert fmtSize == 24
+
+			data[offset:offset+fmtSize] = struct.pack(fmt,
+				elfSymbol.st_name,
+				elfSymbol.st_info,
+				elfSymbol.st_other,
+				elfSymbol.st_shndx,
+				elfSymbol.st_value,
+				elfSymbol.st_size,
+			)
+
+
 	# this function parses the ELF file
 	# return values: None
 	def parseElf(self, buffer_list, onlyParseHeader=False):
@@ -921,15 +952,18 @@ class ElfParser(object):
 		relEntrySize = None
 		relOffset = None
 		relSize = None
+		relaEntrySize = None
+		relaOffset = None
+		relaSize = None
 		symbolEntrySize = None
 		symbolTableOffset = None
 		stringTableOffset = None
 		stringTableSize = None
 		for dynEntry in self.dynamicSegmentEntries:
 			if dynEntry.d_tag == D_tag.DT_JMPREL:
-				# get the offset in the file of the jump relocation table
-				jmpRelOffset = self.virtualMemoryAddrToFileOffset(
-					dynEntry.d_un)
+				if jmpRelOffset is not None:
+					raise ValueError("Can't handle multiple DT_JMPREL")
+				jmpRelOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
 				continue
 			if dynEntry.d_tag == D_tag.DT_PLTRELSZ:
 				pltRelSize = dynEntry.d_un
@@ -938,14 +972,30 @@ class ElfParser(object):
 				pltRelType = dynEntry.d_un
 				continue
 			if dynEntry.d_tag == D_tag.DT_RELENT:
+				if relEntrySize is not None:
+					raise ValueError("Can't handle multiple DT_RELENT")
 				relEntrySize = dynEntry.d_un
 				continue
+			if dynEntry.d_tag == D_tag.DT_RELAENT:
+				if relaEntrySize is not None:
+					raise ValueError("Can't handle multiple DT_RELAENT")
+				relaEntrySize = dynEntry.d_un
+				continue
 			if dynEntry.d_tag == D_tag.DT_REL:
-				# get the offset in the file of the relocation table
+				if relOffset is not None:
+					raise ValueError("Can't handle multiple DT_REL")
 				relOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
+				continue
+			if dynEntry.d_tag == D_tag.DT_RELA:
+				if relaOffset is not None:
+					raise ValueError("Can't handle multiple DT_RELA")
+				relaOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
 				continue
 			if dynEntry.d_tag == D_tag.DT_RELSZ:
 				relSize = dynEntry.d_un
+				continue
+			if dynEntry.d_tag == D_tag.DT_RELASZ:
+				relaSize = dynEntry.d_un
 				continue
 			if dynEntry.d_tag == D_tag.DT_SYMENT:
 				symbolEntrySize = dynEntry.d_un
@@ -1085,99 +1135,117 @@ class ElfParser(object):
 				# add entry to dynamic symbol entries list
 				self.dynamicSymbolEntries.append(tempSymbol)
 
+		# holds tuples: (type, offset, size, targetlist)
+		relocTODO = []
 
-		# check if DT_JMPREL entry exists (it is optional for ELF
-		# executables/shared objects)
-		# => parse jump relocation entries
+		# DT_JMPREL
 		if jmpRelOffset is not None:
+			if pltRelType is None:
+				raise ValueError('DT_JMPREL present but DT_PLTREL not.')
+			if pltRelSize is None:
+				raise ValueError('DT_JMPREL present but DT_PLTRELSZ not.')
 
-			# create a list for all jump relocation entries
+			if pltRelType == D_tag.DT_REL:
+				if relEntrySize is None:
+					raise ValueError('DT_JMPREL present with ' \
+							+ ' DT_PLTREL == DT_REL, but DT_RELSZ not present')
+			elif pltRelType == D_tag.DT_RELA:
+				if relaEntrySize is None:
+					raise ValueError('DT_JMPREL present with ' \
+							+ ' DT_PLTREL == DT_RELA, but DT_RELASZ not present')
+			else:
+				raise ValueError('Invalid/unexpected DT_PLTREL (pltRelType).')
+
 			self.jumpRelocationEntries = list()
+			relocTODO.append((pltRelType, jmpRelOffset, pltRelSize,
+				self.jumpRelocationEntries))
 
-			# parse all jump relocation entries
-			for i in range(pltRelSize / relEntrySize):
-				jmpRelEntry = ElfN_Rel()
-
-				tempOffset = jmpRelOffset + i*relEntrySize
-				(
-					# Elf32_Addr    r_offset;    (32 bit only!)
-					# in executable and share object files
-					# => r_offset holds a virtual address
-					jmpRelEntry.r_offset,
-
-					# Elf32_Word    r_info;      (32 bit only!)
-					jmpRelEntry.r_info,
-
-				) = struct.unpack("<II", self.data[tempOffset:tempOffset+8])
-				del tempOffset
-
-				(jmpRelEntry.r_sym, jmpRelEntry.r_type) = \
-						self.relocationSymIdxAndTypeFromInfo(jmpRelEntry.r_info)
-
-				# get values from the symbol table
-				tempOffset = symbolTableOffset \
-					+ (jmpRelEntry.r_sym*symbolEntrySize)
-				tempSymbol = self._parseDynamicSymbol(tempOffset,
-					stringTableOffset, stringTableSize)
-
-				# check if parsed dynamic symbol already exists
-				# if it does => use already existed dynamic symbol
-				# else => use newly parsed dynamic symbol
-				dynamicSymbolFound = False
-				for dynamicSymbol in self.dynamicSymbolEntries:
-					if (tempSymbol.ElfN_Sym.st_name
-						== dynamicSymbol.ElfN_Sym.st_name
-						and tempSymbol.ElfN_Sym.st_value
-						== dynamicSymbol.ElfN_Sym.st_value
-						and tempSymbol.ElfN_Sym.st_size
-						== dynamicSymbol.ElfN_Sym.st_size
-						and tempSymbol.ElfN_Sym.st_info
-						== dynamicSymbol.ElfN_Sym.st_info
-						and tempSymbol.ElfN_Sym.st_other
-						== dynamicSymbol.ElfN_Sym.st_other
-						and tempSymbol.ElfN_Sym.st_shndx
-						== dynamicSymbol.ElfN_Sym.st_shndx):
-						jmpRelEntry.symbol = dynamicSymbol
-						dynamicSymbolFound = True
-						break
-				if dynamicSymbolFound is False:
-					jmpRelEntry.symbol = tempSymbol
-
-				# add entry to jump relocation entries list
-				self.jumpRelocationEntries.append(jmpRelEntry)
-
-
-		# check if DT_REL entry exists (DT_REL is only
-		# mandatory when DT_RELA is not present)
-		# => parse relocation entries
+		# DT_REL (only mandatory hwn DT_RELA is not present)
 		if relOffset is not None:
+			if relSize is None:
+				raise ValueError('DT_REL present but DT_RELSZ not.')
 
-			# create a list for all relocation entries
+			if relEntrySize is None:
+				raise ValueError('DT_REL present but DT_RELENT not.')
+
 			self.relocationEntries = list()
+			relocTODO.append((D_tag.DT_REL, relOffset, relSize,
+				self.relocationEntries))
 
-			# parse all relocation entries
-			for i in range(relSize / relEntrySize):
-				relEntry = ElfN_Rel()
+		# DT_RELA
+		if relaOffset is not None:
+			if relaSize is None:
+				raise ValueError('DT_RELA present but DT_RELASZ not.')
 
-				tempOffset = relOffset + i*relEntrySize
-				(
-					# Elf32_Addr    r_offset;    (32 bit only!)
-					# in executable and share object files
-					# => r_offset holds a virtual address
-					relEntry.r_offset,
+			if relaEntrySize is None:
+				raise ValueError('DT_RELA present but DT_RELAENT not.')
 
-					# Elf32_Word    r_info;      (32 bit only!)
-					relEntry.r_info,
+			self.relocationEntries = list()
+			relocTODO.append((D_tag.DT_RELA, relaOffset, relaSize,
+				self.relocationEntries))
 
-				) = struct.unpack("<II", self.data[tempOffset:tempOffset+8])
+		if relOffset is not None and relaOffset is not None:
+			raise RuntimeError('INTERNAL ERROR: TODO REL READ 1')
+
+		if len(relocTODO) < 1:
+			raise RuntimeError('INTERNAL ERROR: TODO REL READ 2')
+
+
+		for relocType, relocOffset, relocSize, relocList in relocTODO:
+			if relocType == D_tag.DT_REL:
+				relocEntrySize = relEntrySize
+			elif relocType == D_tag.DT_RELA:
+				relocEntrySize = relaEntrySize
+
+			if relocType == D_tag.DT_REL:
+				if self.bits == 32:
+					structFmt = '<II'
+				elif self.bits == 64:
+					structFmt = '<QQ'
+			elif relocType == D_tag.DT_RELA:
+				if self.bits == 32:
+					structFmt = '<IIi'
+				elif self.bits == 64:
+					structFmt = '<QQq'
+
+			assert struct.calcsize(structFmt) == relocEntrySize
+
+			for i in range(relocSize / relocEntrySize):
+				tempOffset = relocOffset + i*relocEntrySize
+
+				if relocType == D_tag.DT_REL:
+					relocEntry = ElfN_Rel()
+					(
+						# ElfN_Addr     r_offset;    (N = 32/64)
+						# in executable and share object files
+						# => r_offset holds a virtual address
+						relocEntry.r_offset,
+
+						# ElfN_Word     r_info;      (N = 32/64)
+						relocEntry.r_info,
+					) = struct.unpack(structFmt, self.data[tempOffset:tempOffset+relocEntrySize])
+				elif relocType == D_tag.DT_RELA:
+					relocEntry = ElfN_Rela()
+					(
+						# ElfN_Addr     r_offset;    (N = 32/64)
+						# in executable and share object files
+						# => r_offset holds a virtual address
+						relocEntry.r_offset,
+
+						# ElfN_Word     r_info;      (N = 32/64)
+						relocEntry.r_info,
+
+						relocEntry.r_addend,
+					) = struct.unpack(structFmt, self.data[tempOffset:tempOffset+relocEntrySize])
+
 				del tempOffset
 
-				(relEntry.r_sym, relEntry.r_type) = \
-						self.relocationSymIdxAndTypeFromInfo(relEntry.r_info)
+				(relocEntry.r_sym, relocEntry.r_type) = \
+						self.relocationSymIdxAndTypeFromInfo(relocEntry.r_info)
 
 				# get values from the symbol table
 				tempOffset = symbolTableOffset \
-					+ (relEntry.r_sym*symbolEntrySize)
+					+ (relocEntry.r_sym*symbolEntrySize)
 				tempSymbol = self._parseDynamicSymbol(tempOffset,
 					stringTableOffset, stringTableSize)
 
@@ -1198,14 +1266,13 @@ class ElfParser(object):
 						== dynamicSymbol.ElfN_Sym.st_other
 						and tempSymbol.ElfN_Sym.st_shndx
 						== dynamicSymbol.ElfN_Sym.st_shndx):
-						relEntry.symbol = dynamicSymbol
+						relocEntry.symbol = dynamicSymbol
 						dynamicSymbolFound = True
 						break
 				if dynamicSymbolFound is False:
-					relEntry.symbol = tempSymbol
+					relocEntry.symbol = tempSymbol
 
-				# add entry to relocation entries list
-				self.relocationEntries.append(relEntry)
+				relocList.append(relocEntry)
 
 
 	# this function dumps a list of relocations (used in printElf())
@@ -1674,26 +1741,52 @@ class ElfParser(object):
 		# search for relocation entries in dynamic segment entries
 		jmpRelOffset = None
 		pltRelSize = None
+		pltRelType = None
 		relEntrySize = None
 		relOffset = None
 		relSize = None
+		relaEntrySize = None
+		relaOffset = None
+		relaSize = None
 		symbolTableOffset = None
 		symbolEntrySize = None
 		for dynEntry in self.dynamicSegmentEntries:
 			if dynEntry.d_tag == D_tag.DT_JMPREL:
-				# get the offset in the file of the jump relocation table
-				jmpRelOffset = self.virtualMemoryAddrToFileOffset(
-					dynEntry.d_un)
+				if jmpRelOffset is not None:
+					raise ValueError("Can't handle multiple DT_JMPREL")
+				jmpRelOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
 				continue
 			if dynEntry.d_tag == D_tag.DT_PLTRELSZ:
 				pltRelSize = dynEntry.d_un
 				continue
+			if dynEntry.d_tag == D_tag.DT_PLTREL:
+				pltRelType = dynEntry.d_un
+				continue
 			if dynEntry.d_tag == D_tag.DT_RELENT:
+				if relEntrySize is not None:
+					raise ValueError("Can't handle multiple DT_RELENT")
 				relEntrySize = dynEntry.d_un
 				continue
+			if dynEntry.d_tag == D_tag.DT_RELAENT:
+				if relaEntrySize is not None:
+					raise ValueError("Can't handle multiple DT_RELAENT")
+				relaEntrySize = dynEntry.d_un
+				continue
 			if dynEntry.d_tag == D_tag.DT_REL:
-				# get the offset in the file of the relocation table
+				if relOffset is not None:
+					raise ValueError("Can't handle multiple DT_REL")
 				relOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
+				continue
+			if dynEntry.d_tag == D_tag.DT_RELA:
+				if relaOffset is not None:
+					raise ValueError("Can't handle multiple DT_RELA")
+				relaOffset = self.virtualMemoryAddrToFileOffset(dynEntry.d_un)
+				continue
+			if dynEntry.d_tag == D_tag.DT_RELSZ:
+				relSize = dynEntry.d_un
+				continue
+			if dynEntry.d_tag == D_tag.DT_RELASZ:
+				relaSize = dynEntry.d_un
 				continue
 			if dynEntry.d_tag == D_tag.DT_SYMTAB:
 				# get the offset in the file of the symbol table
@@ -1702,126 +1795,90 @@ class ElfParser(object):
 				continue
 			if dynEntry.d_tag == D_tag.DT_SYMENT:
 				symbolEntrySize = dynEntry.d_un
-				continue
-			if dynEntry.d_tag == D_tag.DT_RELSZ:
-				relSize = dynEntry.d_un
 
 
 		# write dynamic symbols back to dynamic symbol table
 		# (if the dynamic symbol table could be parsed)
 		for i in range(len(self.dynamicSymbolEntries)):
-
 			if symbolTableOffset is not None:
-				dynSymEntry = self.dynamicSymbolEntries[i]
-				symbol = dynSymEntry.ElfN_Sym
+				self._writeDynamicSymbol(newfile,
+						symbolTableOffset + i * symbolEntrySize,
+						self.dynamicSymbolEntries[i].ElfN_Sym)
 
-				tempOffset = symbolTableOffset + i * symbolEntrySize
-				newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
-					# Elf32_Word     st_name;    (32 bit only!)
-					symbol.st_name,
-
-					# Elf32_Addr     st_value;   (32 bit only!)
-					symbol.st_value,
-
-					# Elf32_Word     st_size;    (32 bit only!)
-					symbol.st_size,
-
-					# unsigned char  st_info;    (32 bit only!)
-					symbol.st_info,
-
-					# unsigned char  st_other;   (32 bit only!)
-					symbol.st_other,
-
-					# Elf32_Half     st_shndx;   (32 bit only!)
-					symbol.st_shndx,
-				)
-				del tempOffset
-
-
-		# check if DT_JMPREL entry exists (it is optional
-		# for ELF executables/shared objects)
-		# => write jump relocation entries back
+		# for fast lookups
 		dynSymSet = set(self.dynamicSymbolEntries)
+
+
+		# => write (jump) relocation entries back
+
+		# holds tuples: (type, offset, size, sourcelist)
+		relocTODO = []
+
+		# DT_JMPREL
 		if jmpRelOffset is not None:
-			for i in range(len(self.jumpRelocationEntries)):
-				tempOffset = jmpRelOffset + (i*relEntrySize)
-				newfile[tempOffset:tempOffset+8] = struct.pack('<II',
-					# Elf32_Addr    r_offset
-					self.jumpRelocationEntries[i].r_offset,
-					# Elf32_Word    r_info
-					self.jumpRelocationEntries[i].r_info
-				)
-				del tempOffset
+			relocTODO.append((pltRelType, jmpRelOffset, pltRelSize,
+				self.jumpRelocationEntries))
 
-				# check if dynamic symbol was already written
-				# when writing all dynamic symbol entries back
-				# if not => write dynamic symbol back
-				jmpRelEntry = self.jumpRelocationEntries[i]
-				dynSym = jmpRelEntry.symbol
-				if (dynSym not in dynSymSet
-					and symbolTableOffset is not None):
-
-					symbol = dynSym.ElfN_Sym
-
-					tempOffset = symbolTableOffset \
-						+ jmpRelEntry.r_sym * symbolEntrySize
-					newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
-						# Elf32_Word      st_name;
-						symbol.st_name,
-						# Elf32_Addr      st_value;
-						symbol.st_value,
-						# Elf32_Word      st_size;
-						symbol.st_size,
-						# unsigned char   st_info;
-						symbol.st_info,
-						# unsigned char   st_other;
-						symbol.st_other,
-						# Elf32_Half      st_shndx;
-						symbol.st_shndx
-					)
-					del tempOffset
-
-		# check if DT_REL entry exists (DT_REL is only mandatory
-		# when DT_RELA is not present)
-		# => write relocation entries back
+		# DT_REL
 		if relOffset is not None:
-			for i in range(len(self.relocationEntries)):
-				tempOffset = relOffset + (i*relEntrySize)
-				newfile[tempOffset:tempOffset+8] = struct.pack('<II',
-					# Elf32_Addr    r_offset;
-					self.relocationEntries[i].r_offset,
-					# Elf32_Word    r_info;
-					self.relocationEntries[i].r_info
-				)
+			relocTODO.append((D_tag.DT_REL, relOffset, relSize,
+				self.relocationEntries))
+
+		# DT_RELA
+		if relaOffset is not None:
+			relocTODO.append((D_tag.DT_RELA, relaOffset, relaSize,
+				self.relocationEntries))
+
+		if relOffset is not None and relaOffset is not None:
+			raise RuntimeError('INTERNAL ERROR: TODO REL WRITE 1')
+
+
+		for relocType, relocOffset, relocSize, relocList in relocTODO:
+			if relocType == D_tag.DT_REL:
+				relocEntrySize = relEntrySize
+			elif relocType == D_tag.DT_RELA:
+				relocEntrySize = relaEntrySize
+
+			if relocType == D_tag.DT_REL:
+				if self.bits == 32:
+					structFmt = '<II'
+				elif self.bits == 64:
+					structFmt = '<QQ'
+			elif relocType == D_tag.DT_RELA:
+				if self.bits == 32:
+					structFmt = '<IIi'
+				elif self.bits == 64:
+					structFmt = '<QQq'
+
+			assert struct.calcsize(structFmt) == relocEntrySize
+
+			for i, relocEntry in enumerate(relocList):
+				tempOffset = relocOffset + (i*relocEntrySize)
+
+				if relocType == D_tag.DT_REL:
+					newfile[tempOffset:tempOffset+relocEntrySize] = struct.pack(
+							structFmt,
+							relocEntry.r_offset,
+							relocEntry.r_info,
+					)
+				elif relocType == D_tag.DT_RELA:
+					newfile[tempOffset:tempOffset+relocEntrySize] = struct.pack(
+							structFmt,
+							relocEntry.r_offset,
+							relocEntry.r_info,
+							relocEntry.r_addend,
+					)
+
 				del tempOffset
 
 				# check if dynamic symbol was already written
 				# when writing all dynamic symbol entries back
 				# if not => write dynamic symbol back
-				relEntry = self.relocationEntries[i]
-				dynSym = relEntry.symbol
-				if (dynSym not in dynSymSet
-					and symbolTableOffset is not None):
-
-					symbol = dynSym.ElfN_Sym
-
-					tempOffset = symbolTableOffset \
-						+ jmpRelEntry.r_sym * symbolEntrySize
-					newfile[tempOffset:tempOffset+16] = struct.pack('<IIIBBH',
-						# Elf32_Word      st_name;
-						symbol.st_name,
-						# Elf32_Addr      st_value;
-						symbol.st_value,
-						# Elf32_Word      st_size;
-						symbol.st_size,
-						# unsigned char   st_info;
-						symbol.st_info,
-						# unsigned char   st_other;
-						symbol.st_other,
-						# Elf32_Half      st_shndx;
-						symbol.st_shndx
-					)
-					del tempOffset
+				dynSym = relocEntry.symbol
+				if (dynSym not in dynSymSet and symbolTableOffset is not None):
+					self._writeDynamicSymbol(newfile, symbolTableOffset \
+							+ relocEntry.r_sym * symbolEntrySize,
+							dynSym.ElfN_Sym)
 
 		# ------
 
