@@ -12,7 +12,8 @@ import struct
 import sys
 import hashlib
 from Elf import ElfN_Ehdr, Shstrndx, ElfN_Shdr, SH_flags, SH_type, \
-	Elf32_Phdr, P_type, P_flags, D_tag, ElfN_Dyn, ElfN_Rel, ElfN_Sym, R_type, \
+	Elf32_Phdr, P_type, P_flags, D_tag, ElfN_Dyn, \
+	ElfN_Rel, ElfN_Rela, ElfN_Sym, R_type, \
 	Section, Segment, DynamicSymbol
 
 
@@ -30,6 +31,7 @@ class ElfParser:
 		self.jumpRelocationEntries = list()
 		self.relocationEntries = list()
 		self.startOffset = startOffset
+		self.bits = 32
 
 		# read file and convert data to list
 		f = open(filename, "rb")
@@ -62,8 +64,12 @@ class ElfParser:
 	# this function interprets the r_info field from ElfN_Rel(a) structs
 	# depending on self.bits
 	def relocationSymIdxAndTypeFromInfo(self, rInfo):
-		rSym = (rInfo >> 8)
-		rType = (rInfo & 0xff)
+		if self.bits == 32:
+			rSym = (rInfo >> 8)
+			rType = (rInfo & 0xff)
+		elif self.bits == 64:
+			rSym = (rInfo >> 32)
+			rType = (rInfo & 0xffffffff)
 		return (rSym, rType)
 
 

@@ -647,6 +647,11 @@ class ElfN_Rel:
 	#define ELF32_R_SYM(i)		((i)>>8)
 	#define ELF32_R_TYPE(i)		((unsigned char)(i))
 	#define ELF32_R_INFO(s,t)	(((s)<<8)+(unsigned char)(t))
+
+	Macros for 64 bit systems
+	#define ELF64_R_SYM(i)		((i)>>32)
+	#define ELF64_R_TYPE(i)		((i)&0xffffffff)
+	#define ELF64_R_INFO(s,t)	(((s)<<32)+(t))
 	'''
 	def __init__(self):
 		# in executable and share object files => r_offset holds a virtual address
@@ -663,6 +668,37 @@ class ElfN_Rel:
 		self.r_sym = None
 
 		# for 32 bit systems
+		self.symbol = DynamicSymbol()
+
+
+class ElfN_Rela:
+	'''
+	typedef struct
+	{
+		Elf32_Addr	r_offset;		/* Address */
+		Elf32_Word	r_info;			/* Relocation type and symbol index */
+		Elf32_Sword	r_addend;		/* Addend */
+	} Elf32_Rela;
+
+	typedef struct
+	{
+		Elf64_Addr		r_offset;		/* Address */
+		Elf64_Xword		r_info;			/* Relocation type and symbol index */
+		Elf64_Sxword	r_addend;		/* Addend */
+	} Elf64_Rela;
+
+	Macros for 32/64 bit systems: see description for ElfN_Rel
+	'''
+	def __init__(self):
+		# in executable and share object files => r_offset holds a virtual address
+		self.r_offset = None
+
+		self.r_info = None
+		self.r_type = None
+		self.r_sym = None
+
+		self.r_addend = None
+
 		self.symbol = DynamicSymbol()
 
 
