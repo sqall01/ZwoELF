@@ -369,8 +369,11 @@ class SH_type(object):
 		0x5: "SHT_HASH", 0x6: "SHT_DYNAMIC", 0x7: "SHT_NOTE",
 		0x8: "SHT_NOBITS", 0x9: "SHT_REL", 0xA: "SHT_SHLIB",
 		0xB: "SHT_DYNSYM", 0xe: "SHT_INIT_ARRAY",
-		0xf: "SHT_FINI_ARRAY", 0x6ffffffe: "SHT_VERNEED",
-		0x70000000: "SHT_LOPROC", 0x6fffffff: "SHT_VERSYM",
+		0xf: "SHT_FINI_ARRAY",
+		0x6ffffff5: "SHT_GNU_ATTRIBUTES", 0x6ffffff6: "SHT_GNU_HASH",
+		0x6ffffff7: "SHT_GNU_LIBLIST", 0x6ffffff8: "SHT_CHECKSUM",
+		0x6ffffffe: "SHT_VERNEED", 0x6fffffff: "SHT_VERSYM",
+		0x70000000: "SHT_LOPROC",
 		0x7fffffff: "SHT_HIPROC", 0x80000000: "SHT_LOUSER",
 		0xffffffff: "SHT_HIUSER"}
 	SHT_NULL = 0x0
@@ -387,6 +390,10 @@ class SH_type(object):
 	SHT_DYNSYM = 0xB
 	SHT_INIT_ARRAY = 0xe
 	SHT_FINI_ARRAY = 0xf
+	SHT_GNU_ATTRIBUTES = 0x6ffffff5
+	SHT_GNU_HASH = 0x6ffffff6
+	SHT_GNU_LIBLIST = 0x6ffffff7
+	SHT_CHECKSUM = 0x6ffffff8
 	SHT_VERNEED = 0x6ffffffe
 	SHT_VERSYM = 0x6fffffff
 	SHT_LOPROC = 0x70000000
