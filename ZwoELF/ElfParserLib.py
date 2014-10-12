@@ -863,9 +863,11 @@ class ElfParser(object):
 				if segmentWithin.elfN_Phdr.p_type == P_type.PT_GNU_STACK:
 					continue
 
+				# skip if segments are the same
 				if segmentWithin == outerSegment:
 					continue
 
+				# check if segmentWithin lies within the outerSegment
 				innerStart = segmentWithin.elfN_Phdr.p_offset
 				innerEnd = innerStart + segmentWithin.elfN_Phdr.p_filesz
 				outerStart = outerSegment.elfN_Phdr.p_offset
